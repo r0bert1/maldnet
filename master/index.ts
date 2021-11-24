@@ -12,7 +12,7 @@ app.get('/', (_req,res)=> {
 
 app.use(bidRouter)
 
-const PORT = 3001
+const PORT = 3002
 
 app.listen(PORT, ()=> {
   console.log(`Server running on port ${PORT}`)
