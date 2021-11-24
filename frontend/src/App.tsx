@@ -6,21 +6,24 @@ import React, { Component } from 'react';
 import Browse from './Browse';
 import Auction from './Auction';
 
-const ReactRouter = require('react-router-dom');
-const Router = ReactRouter.BrowserRouter;
-const Route = ReactRouter.Route;
-const Switch = ReactRouter.Switch;
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 export const App = () => {
 	return (
-		<>
-			<Browse />
-		</>
+		<div className='container'>
+			<BrowserRouter>
+				<Routes>
+					<Route path="/" element={<Browse />} />
+					<Route path="auction/:aid" element={<Auction />} />
+				</Routes>
+			</BrowserRouter>
+			<Footer />
+		</div>
 	)
 }
 
 function Footer(_props: any) {
-  return (
-    <footer>&copy; 2021 Team WARM </footer>
-  )
+	return (
+		<footer>&copy; 2021 Team WARM </footer>
+	)
 }
