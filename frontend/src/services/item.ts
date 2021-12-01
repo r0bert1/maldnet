@@ -8,14 +8,15 @@ const getItems = async () => {
 }
 
 const addItem = async () => {
-  const body = {
+  const item = {
     seller: 'randomBaldGuy',
     name: 'Wiggly jiggly wig',
     description: 'This wig is most wiggy thing on earth',
     startAmount: 0,
   }
-  const request = await axios.post(url, body)
-  return request.data
+
+  const response = await axios.post(url, item)
+  return response.data
 }
 
 

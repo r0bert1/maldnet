@@ -1,5 +1,7 @@
 import express from 'express'
 const app = express()
+const cors = require('cors')
+const bodyParser = require('body-parser')
 
 import http from 'http';
 import { Server } from 'socket.io';
@@ -15,6 +17,9 @@ const io = new Server(server, {
 	}
 });
 
+
+app.use(cors())
+app.use(bodyParser.json())
 app.use('/api/item', itemRouter)
 
 app.get('/', (_req, res) => {
