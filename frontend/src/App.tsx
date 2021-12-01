@@ -1,7 +1,7 @@
 
 import logo from './logo.svg';
 import './App.css';
-import socketIOClient from "socket.io-client";
+import socketIOClient, { Socket } from "socket.io-client";
 
 
 import React, { Component, useEffect, useState } from 'react';
@@ -10,15 +10,15 @@ import Auction from './Auction';
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+const ENDPOINT = "localhost:3001";
+const socket = socketIOClient(ENDPOINT, {
+	withCredentials: true
+});
+
 export const App = () => {
 	const [response, setResponse] = useState("");
 
-	const ENDPOINT = "localhost:3001";
-  
 	useEffect(() => {
-		const socket = socketIOClient(ENDPOINT, {
-			withCredentials: true
-		});
 		socket.on("FromAPI", data => {
 			setResponse(data);
 		});
@@ -29,7 +29,7 @@ export const App = () => {
 			<BrowserRouter>
 				<Routes>
 					<Route path="/" element={<Browse />} />
-					<Route path="auction/:aid" element={<Auction />} />
+					<Route path="auction/:aid" element={<Auction socket={socket} />} />
 				</Routes>
 			</BrowserRouter>
 			<Footer />
