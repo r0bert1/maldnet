@@ -23,6 +23,7 @@ app.get('/ping', (_req, res) => {
 
 io.on('connection', (socket) => {
 	console.log('a user connected');
+	socket.on('bid', console.log);
 	socket.on('disconnect', () => {
 		console.log('user disconnected');
 	});
