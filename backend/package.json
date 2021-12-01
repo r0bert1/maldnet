@@ -6,7 +6,8 @@
   "scripts": {
     "start": "ts-node index.ts",
     "start2": "PORT=3003 ts-node index.ts",
-    "watch": "ts-node-dev index.ts"
+    "watch": "ts-node-dev index.ts",
+    "watch2": "PORT=3003 ts-node-dev index.ts"
   },
   "author": "",
   "license": "ISC",
