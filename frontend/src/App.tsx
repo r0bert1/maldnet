@@ -1,14 +1,29 @@
 
 import logo from './logo.svg';
 import './App.css';
+import socketIOClient from "socket.io-client";
 
-import React, { Component } from 'react';
+
+import React, { Component, useEffect, useState } from 'react';
 import Browse from './Browse';
 import Auction from './Auction';
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 export const App = () => {
+	const [response, setResponse] = useState("");
+
+	const ENDPOINT = "localhost:3001";
+  
+	useEffect(() => {
+		const socket = socketIOClient(ENDPOINT, {
+			withCredentials: true
+		});
+		socket.on("FromAPI", data => {
+			setResponse(data);
+		});
+	}, []);
+
 	return (
 		<div className='container'>
 			<BrowserRouter>
