@@ -4,6 +4,8 @@ const app = express()
 import http from 'http';
 import { Server } from 'socket.io';
 
+const itemRouter = require('./routers/item')
+
 const server = http.createServer(app);
 const io = new Server(server, {
 	cors: {
@@ -12,6 +14,8 @@ const io = new Server(server, {
 		credentials: true
 	}
 });
+
+app.use('/api/item', itemRouter)
 
 app.get('/', (_req, res) => {
 	res.sendFile(__dirname + '/index.html');

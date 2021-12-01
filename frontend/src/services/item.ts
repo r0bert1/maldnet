@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const url = `http://localhost:3001/item`
+const url = `http://localhost:3001/api/item`
 
 const getItems = async () => {
   const response = await axios.get(url)
@@ -10,7 +10,6 @@ const getItems = async () => {
 const addItem = async () => {
   const body = {
     seller: 'randomBaldGuy',
-    buyer: 'evenMoreBaldGuy',
     name: 'Wiggly jiggly wig',
     description: 'This wig is most wiggy thing on earth',
     startAmount: 0,
