@@ -22,7 +22,8 @@
     "webpack": "^4.42.0"
   },
   "scripts": {
-    "start": "react-scripts --openssl-legacy-provider start",
+    "start": "PORT=3002 react-scripts --openssl-legacy-provider start",
+    "start2": "PORT=3004 react-scripts --openssl-legacy-provider start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

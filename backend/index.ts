@@ -11,9 +11,10 @@ import { Server } from 'socket.io'
 const itemRouter = require('./routers/item')
 
 const server = http.createServer(app)
+const PORT = process.env.PORT || 3001
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:3000',
+    origin: `http://localhost:${Number(PORT) + 1}`,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -34,8 +35,6 @@ app.post('/bid', (req, _res) => {
 app.get('/ping', async (_req, res) => {
   res.send('pong')
 })
-
-const PORT = process.env.PORT || 3001
 
 io.on('connection', (socket) => {
   console.log('a user connected')
