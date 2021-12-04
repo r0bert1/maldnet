@@ -1,6 +1,6 @@
 
-import logo from './logo.svg';
 import './App.css';
+import Item from './services/item'; 
 import socketIOClient, { Socket } from "socket.io-client";
 
 
@@ -17,8 +17,10 @@ const socket = socketIOClient(ENDPOINT, {
 
 export const App = () => {
 	const [response, setResponse] = useState("");
+	const [items, setItems] = useState([]);
 
 	useEffect(() => {
+		Item.getItems().then(items => setItems(items));
 		socket.on("FromAPI", data => {
 			setResponse(data);
 		});
@@ -28,7 +30,7 @@ export const App = () => {
 		<div className='container'>
 			<BrowserRouter>
 				<Routes>
-					<Route path="/" element={<Browse />} />
+					<Route path="/" element={<Browse socket={socket} items={items}/>} />
 					<Route path="auction/:aid" element={<Auction socket={socket} />} />
 				</Routes>
 			</BrowserRouter>

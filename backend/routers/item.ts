@@ -3,8 +3,20 @@ const Item = require('../models/item')
 
 itemRouter.get('/', async (_req: any, res: any, next: any) => {
   try {
-    const items = await Item.find({})
-    res.json(items.map((item: any) => item.toJSON()))
+    const items = [{
+		id: '389213891',
+		seller: '123781273126783',
+		name: 'Wiggie',
+		description: 'This wig is most wiggy thing on earth',
+		startAmount: 10,
+	},{
+		id: '213123123',
+		seller: '812371263781',
+		name: 'Beruuggi',
+		description: 'Onpas hyvännäköinen!',
+		startAmount: 123,
+	}] // await Item.find({})
+    res.json(items);
   } catch (exception) {
     next(exception)
   }
