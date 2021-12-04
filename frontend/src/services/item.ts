@@ -7,6 +7,11 @@ const getItems = async () => {
   return response.data
 }
 
+const getItem = async (id: string) => {
+	const response = await axios.get(url + '/' + id)
+	return response.data
+}
+
 const addItem = async () => {
   const item = {
     seller: 'randomBaldGuy',
@@ -20,4 +25,4 @@ const addItem = async () => {
 }
 
 
-export default { getItems, addItem }
+export default { getItems, getItem, addItem }
