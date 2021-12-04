@@ -6,7 +6,7 @@ const cors = require('cors')
 const bodyParser = require('body-parser')
 
 import http from 'http'
-import { Server } from 'socket.io'
+import { Server, Socket } from 'socket.io'
 
 const itemRouter = require('./routers/item')
 
@@ -20,6 +20,8 @@ const io = new Server(server, {
   },
 })
 
+let sockets: Socket[] = [];
+
 app.use(cors())
 app.use(bodyParser.json())
 app.use('/api/item', itemRouter)
@@ -29,7 +31,8 @@ app.get('/', (_req, res) => {
 })
 
 app.post('/bid', (req, _res) => {
-  console.log(req.body)
+	sockets.forEach(socket => socket.emit("bid", req.body));
+  //console.log(req.body)
 })
 
 app.get('/ping', async (_req, res) => {
@@ -38,6 +41,7 @@ app.get('/ping', async (_req, res) => {
 
 io.on('connection', (socket) => {
   console.log('a user connected')
+  sockets.push(socket);
   socket.on('bid', (data) => {
     config.ports
       .filter((port) => port !== PORT)

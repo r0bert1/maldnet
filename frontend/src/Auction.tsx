@@ -5,22 +5,22 @@ const Link = require('react-router-dom').Link
 
 class Auction extends Component<
   { socket: Socket },
-  { bid: number; currentBid: number; itemId: number }
+  { newBidAmount: number; amount: number; itemId: string }
 > {
   constructor(props: any) {
     super(props)
     this.state = {
-      bid: 0,
-      currentBid: 69,
-      itemId: +(window.location.pathname.split('/').pop() ?? 0),
+      newBidAmount: 0,
+      amount: 69,
+      itemId: window.location.pathname.split('/').pop() ?? "0",
     }
   }
 
   sendBid(socket: Socket) {
     socket.emit('bid', {
-      userId: 123,
+      userId: "123",
       itemId: this.state.itemId,
-      bid: this.state.bid,
+      amount: this.state.newBidAmount,
     })
   }
 
@@ -28,14 +28,14 @@ class Auction extends Component<
     return (
       <div className="browse">
         <h1 className="browse-header">Wig item number {this.state.itemId}</h1>
-        <h3>Current price: {this.state.currentBid}$</h3>
+        <h3>Current price: {this.state.amount}$</h3>
         <p>Item description</p>
         <div>
           <p>place your bid:</p>
           <input
-            onChange={(event) => this.setState({ bid: +event.target.value })}
+            onChange={(event) => this.setState({ newBidAmount: +event.target.value })}
             type="number"
-            value={this.state.bid}
+            value={this.state.newBidAmount}
           ></input>
           <button onClick={() => this.sendBid(this.props.socket)}>
             Place bid

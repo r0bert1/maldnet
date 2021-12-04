@@ -1,36 +1,60 @@
 
 import './App.css';
-import Item from './services/item'; 
 import socketIOClient, { Socket } from "socket.io-client";
-
 
 import React, { Component, useEffect, useState } from 'react';
 import Browse from './Browse';
 import Auction from './Auction';
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import itemService from './services/item';
 
-const ENDPOINT = "localhost:3001";
+import { Item, Bid } from './Interfaces'
+
+const ENDPOINT = `localhost:${+window.location.port - 1}`;
 const socket = socketIOClient(ENDPOINT, {
 	withCredentials: true
 });
 
 export const App = () => {
-	const [response, setResponse] = useState("");
-	const [items, setItems] = useState([]);
+	const [items, setItems] = useState<Item[]>([]);
 
 	useEffect(() => {
-		Item.getItems().then(items => setItems(items));
-		socket.on("FromAPI", data => {
-			setResponse(data);
+		itemService.getItems().then(items => {
+			setItems(items.map((item: any) => ({
+				...item,
+				currentBid: {
+					itemId: item.id,
+					userId: 'TODO',
+					amount: item.startAmount,
+					timestamp: null
+				}
+			})));
 		});
 	}, []);
+
+	const updateCurrentBid = (item: Item, bid: Bid) => {
+		if (item.id === bid.itemId)
+			return {
+				...item,
+				currentBid: bid
+			}
+		return item;
+	}
+
+	socket.off('bid');
+	socket.on('bid', (bid) => {
+		let newItems = items.map(
+			(item) => updateCurrentBid(item, bid)
+		);
+		setItems(newItems);
+	});
 
 	return (
 		<div className='container'>
 			<BrowserRouter>
 				<Routes>
-					<Route path="/" element={<Browse socket={socket} items={items}/>} />
+					<Route path="/" element={<Browse items={items}/>} />
 					<Route path="auction/:aid" element={<Auction socket={socket} />} />
 				</Routes>
 			</BrowserRouter>

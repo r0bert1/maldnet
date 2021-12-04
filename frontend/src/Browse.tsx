@@ -1,33 +1,18 @@
-import React, { Component, useEffect, useState } from 'react';
-import { Socket } from 'socket.io-client'
-import item from './services/item';
+import React, { useState } from 'react';
 import itemService from './services/item'
+
+import { Item } from './Interfaces'
 
 const Link = require('react-router-dom').Link;
 
-interface Item {
-	id: string,
-	name: string,
-	description: string,
-	startAmount: number,
-	seller: string
-}
-
 const Browse = (props: any) => {
 	let items: Item[] = props.items;
-	let socket: Socket = props.socket;
-
-	const [bids, setBids] = useState(new Map());
-
-	useEffect(() => {
-		let newBids = new Map();
-		items.forEach((item) => newBids.set(item.id, item.startAmount))
-		setBids(newBids)
-	}, []);
 
 	const handleAddClick = () => {
 		itemService.addItem()
 	}
+
+	console.log(items)
 
 	return (
 		<div className='browse'>
@@ -39,7 +24,7 @@ const Browse = (props: any) => {
 					<li key={item.id}>
 						<h2>{item.name}</h2>
 						<p>{item.description}</p>
-						<b>🛸 <span>{bids.get(item.id) ?? item.startAmount}</span> 🛸</b>
+						<b>🛸 <span>{item.currentBid.amount}</span> 🛸</b>
 					</li>
 				))}
 			</ul>

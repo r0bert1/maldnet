@@ -4,13 +4,13 @@ const Item = require('../models/item')
 itemRouter.get('/', async (_req: any, res: any, next: any) => {
   try {
     const items = [{
-		id: '389213891',
+		id: '1',
 		seller: '123781273126783',
 		name: 'Wiggie',
 		description: 'This wig is most wiggy thing on earth',
 		startAmount: 10,
 	},{
-		id: '213123123',
+		id: '2',
 		seller: '812371263781',
 		name: 'Beruuggi',
 		description: 'Onpas hyvännäköinen!',
