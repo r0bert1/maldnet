@@ -12,8 +12,6 @@ const Browse = (props: any) => {
 		itemService.addItem()
 	}
 
-	console.log(items)
-
 	return (
 		<div className='browse'>
 			<h1 className='browse-header'>Mald.fi</h1>

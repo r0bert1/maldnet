@@ -55,7 +55,7 @@ export const App = () => {
 			<BrowserRouter>
 				<Routes>
 					<Route path="/" element={<Browse items={items}/>} />
-					<Route path="auction/:aid" element={<Auction socket={socket} />} />
+					<Route path="auction/:aid" element={<Auction socket={socket} items={items}/>} />
 				</Routes>
 			</BrowserRouter>
 			<Footer />
