@@ -20,7 +20,7 @@ const Browse = (props: any) => {
 			<ul>
 				{items.map((item) => (
 					<li key={item.id}>
-						<h2>{item.name}</h2>
+						<h2><Link to={"auction/" + item.id}>{item.name}</Link></h2>
 						<p>{item.description}</p>
 						<b>🛸 <span>{item.currentBid.amount}</span> 🛸</b>
 					</li>
