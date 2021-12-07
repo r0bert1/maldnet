@@ -20,7 +20,8 @@ const io = new Server(server, {
   },
 })
 
-let sockets: Socket[] = [];
+let sockets: Socket[] = []
+let bids: Record<string, { userId: string; amount: number }> = {}
 
 app.use(cors())
 app.use(bodyParser.json())
@@ -30,9 +31,18 @@ app.get('/', (_req, res) => {
   res.sendFile(__dirname + '/index.html')
 })
 
+const updateBid = (data: {
+  itemId: string
+  userId: string
+  amount: number
+}) => {
+  if (!bids[data.itemId] || bids[data.itemId]['amount'] < data.amount) {
+    bids[data.itemId] = { userId: data.userId, amount: data.amount }
+  }
+}
+
 app.post('/bid', (req, _res) => {
-	sockets.forEach(socket => socket.emit("bid", req.body));
-  //console.log(req.body)
+  updateBid(req.body)
 })
 
 app.get('/ping', async (_req, res) => {
@@ -41,8 +51,9 @@ app.get('/ping', async (_req, res) => {
 
 io.on('connection', (socket) => {
   console.log('a user connected')
-  sockets.push(socket);
+  sockets.push(socket)
   socket.on('bid', (data) => {
+    updateBid(data)
     config.ports
       .filter((port) => port !== PORT)
       .forEach((port) => {
