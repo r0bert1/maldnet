@@ -1,13 +1,14 @@
 import express from 'express'
 import bidRouter from './routers/bidRouter'
+
 const app = express()
 
-app.get('/ping', (_req, res) => {
-  res.send('pong')
-})
+const servers = ['http://localhost:3001', 'http://localhost:3003']
+let current = 0
 
 app.get('/', (_req, res) => {
-  res.send('Hello world!')
+  current === servers.length - 1 ? (current = 0) : current++
+  res.redirect(servers[current])
 })
 
 app.use(bidRouter)
