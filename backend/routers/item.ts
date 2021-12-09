@@ -1,22 +1,26 @@
+import { insertItem, getAllItems } from '../MongoClient'
+
 const itemRouter = require('express').Router()
 const Item = require('../models/item')
 
 itemRouter.get('/', async (_req: any, res: any, next: any) => {
   try {
-    const items = [{
-		id: '1',
-		seller: '123781273126783',
-		name: 'Wiggie',
-		description: 'This wig is most wiggy thing on earth',
-		startAmount: 10,
-	},{
-		id: '2',
-		seller: '812371263781',
-		name: 'Beruuggi',
-		description: 'Onpas hyvännäköinen!',
-		startAmount: 123,
-	}] // await Item.find({})
-    res.json(items);
+	const aitems = await getAllItems()
+	//Vanha kovakoodattu array jäljellä toistaiseksi, jos homma hajoisi :^D
+    // const items = [{
+	// 	id: '1',
+	// 	seller: '123781273126783',
+	// 	name: 'Wiggie',
+	// 	description: 'This wig is most wiggy thing on earth',
+	// 	startAmount: 10,
+	// },{
+	// 	id: '2',
+	// 	seller: '812371263781',
+	// 	name: 'Beruuggi',
+	// 	description: 'Onpas hyvännäköinen!',
+	// 	startAmount: 123,
+	// }] // await Item.find({})
+    res.json(aitems);
   } catch (exception) {
     next(exception)
   }
@@ -56,6 +60,7 @@ itemRouter.post('/', async (req: any, res: any, next: any) => {
   try {
     console.log('item received,', item.toJSON())
     res.json('item received')
+	insertItem(item)
   } catch (exception) {
     next(exception)
   }
