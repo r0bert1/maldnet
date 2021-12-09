@@ -1,13 +1,13 @@
 import express from 'express'
 import axios from 'axios'
 import config from './config.json'
-const app = express()
-const cors = require('cors')
-const bodyParser = require('body-parser')
-
+import path from 'path'
 import http from 'http'
 import { Server, Socket } from 'socket.io'
 
+const app = express()
+const cors = require('cors')
+const bodyParser = require('body-parser')
 const itemRouter = require('./routers/item')
 
 const server = http.createServer(app)
@@ -23,14 +23,6 @@ const io = new Server(server, {
 let sockets: Socket[] = []
 let bids: Record<string, { userId: string; amount: number }> = {}
 
-app.use(cors())
-app.use(bodyParser.json())
-app.use('/api/item', itemRouter)
-
-app.get('/', (_req, res) => {
-  res.sendFile(__dirname + '/index.html')
-})
-
 const updateBid = (data: {
   itemId: string
   userId: string
@@ -41,12 +33,17 @@ const updateBid = (data: {
   }
 }
 
+app.use(cors())
+app.use(bodyParser.json())
+app.use('/api/item', itemRouter)
+app.use(express.static(path.resolve(__dirname, '../frontend/build')))
+
 app.post('/bid', (req, _res) => {
   updateBid(req.body)
 })
 
-app.get('/ping', async (_req, res) => {
-  res.send('pong')
+app.get('*', (_req, res) => {
+  res.sendFile(path.resolve(__dirname, '../frontend/build', 'index.html'))
 })
 
 io.on('connection', (socket) => {
