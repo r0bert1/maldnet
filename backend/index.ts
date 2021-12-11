@@ -21,7 +21,7 @@ const io = new Server(server, {
 })
 
 let sockets: Socket[] = []
-let bids: Record<string, { userId: string; amount: number }> = {}
+let bids: Record<string, { userId: string; amount: number, itemId: string }> = {}
 
 const updateBid = (data: {
   itemId: string
@@ -29,7 +29,8 @@ const updateBid = (data: {
   amount: number
 }) => {
   if (!bids[data.itemId] || bids[data.itemId]['amount'] < data.amount) {
-    bids[data.itemId] = { userId: data.userId, amount: data.amount }
+    bids[data.itemId] = { userId: data.userId, amount: data.amount, itemId: data.itemId }
+    sockets.forEach(socket => socket.emit("bid", data));
   }
 }
 
@@ -40,6 +41,7 @@ app.use(express.static(path.resolve(__dirname, '../frontend/build')))
 
 app.post('/bid', (req, _res) => {
   updateBid(req.body)
+  console.log(req.body)
 })
 
 app.get('*', (_req, res) => {
@@ -63,6 +65,7 @@ io.on('connection', (socket) => {
             console.error(error)
           })
       })
+    
   })
   socket.on('disconnect', () => {
     console.log('user disconnected')
