@@ -6,7 +6,7 @@ const Item = require('../models/item')
 //Gets all items from database. NOTE: not the bids
 itemRouter.get('/', async (_req: any, res: any, next: any) => {
   try {
-	const items = await getAllItems()
+    const items = await getAllItems()
     res.json(items);
   } catch (exception) {
     next(exception)
@@ -27,7 +27,7 @@ itemRouter.post('/', async (req: any, res: any, next: any) => {
   try {
     console.log('item received,', item.toJSON())
     res.json('item received')
-	insertItem(item)
+    insertItem(item)
   } catch (exception) {
     next(exception)
   }

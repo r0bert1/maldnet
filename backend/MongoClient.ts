@@ -31,4 +31,28 @@ async function getAllItems() {
   return findItems;
 }
 
-export { insertItem, getAllItems }
+async function insertUser(User : any) {
+  // Use connect method to connect to the server
+  await client.connect();
+  const db = client.db(dbName);
+  const collection = db.collection('users');
+
+  const addUser = await collection.insertOne(User);
+  console.log('Inserted item =>', addUser);
+
+  return 'done.';
+}
+
+async function getAllUsers() {
+  // Use connect method to connect to the server
+  await client.connect();
+  const db = client.db(dbName);
+  const collection = db.collection('users');
+
+  const findUsers = await collection.find({}).toArray();
+  console.log('Found documents =>', findUsers);
+
+  return findUsers;
+}
+
+export { insertItem, getAllItems, insertUser, getAllUsers }

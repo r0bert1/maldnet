@@ -9,6 +9,7 @@ const app = express()
 const cors = require('cors')
 const bodyParser = require('body-parser')
 const itemRouter = require('./routers/item')
+const userRouter = require('./routers/user')
 
 const server = http.createServer(app)
 const PORT = process.env.PORT || 3001
@@ -43,6 +44,7 @@ app.use(cors())
 //Parses body of posts to json
 app.use(bodyParser.json())
 app.use('/api/item', itemRouter)
+app.use('/api/user', userRouter)
 app.use(express.static(path.resolve(__dirname, '../frontend/build')))
 
 app.post('/api/bid', (req, _res) => {
