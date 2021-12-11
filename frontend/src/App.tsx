@@ -9,14 +9,11 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import itemService from './services/item'
 
 import { Item, Bid } from './Interfaces'
+import { ENDPOINT } from './util'
 
-const ENDPOINT =
-  process.env.NODE_ENV === 'production'
-    ? `localhost:${window.location.port}`
-    : `localhost:${+window.location.port - 1}`
 
-const socket = socketIOClient(ENDPOINT, {
-  withCredentials: true,
+const socket = socketIOClient(ENDPOINT(), {
+  withCredentials: false,
 })
 
 export const App = () => {
@@ -39,7 +36,7 @@ export const App = () => {
   }, [])
 
   const updateCurrentBid = (item: Item, bid: Bid) => {
-    if (item.id === bid.itemId)
+    if (item._id === bid.itemId)
       return {
         ...item,
         currentBid: bid,

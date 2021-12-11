@@ -19,11 +19,11 @@ class Auction extends Component<
 
 	async componentDidMount() {
 		let itemId = window.location.pathname.split('/').pop() ?? "0";
-		let item: Item | undefined = this.props.items.find(item => itemId == item.id)
+		let item: Item | undefined = this.props.items.find(item => itemId == item._id)
 
 		if (item)
 			item.currentBid = {
-				itemId: item.id,
+				itemId: item._id,
 				userId: 'TODO',
 				amount: item.startAmount,
 				timestamp: new Date()
@@ -38,7 +38,7 @@ class Auction extends Component<
 	componentDidUpdate(prevProps: any, _prevState: any) {
 		if (prevProps !== this.props) {
 			let itemId = window.location.pathname.split('/').pop() ?? "0";
-			let item: Item | undefined = this.props.items.find(item => itemId == item.id)
+			let item: Item | undefined = this.props.items.find(item => itemId == item._id)
 
 			this.setState({
 				newBidAmount: item?.currentBid.amount ?? 0,
@@ -48,9 +48,10 @@ class Auction extends Component<
 	}
 
 	sendBid(socket: Socket) {
+		console.log(this.state)
 		socket.emit('bid', {
 			userId: "123",
-			itemId: this.state.item?.id,
+			itemId: this.state.item?._id,
 			amount: this.state.newBidAmount,
 		})
 	}
@@ -60,7 +61,7 @@ class Auction extends Component<
 
 		return (
 			<div className="browse">
-				<h1 className="browse-header">{item?.name} - {item?.id}</h1>
+				<h1 className="browse-header">{item?.name} - {item?._id}</h1>
 				<h3>Current price: {item?.currentBid.amount}$</h3>
 				<p>{item?.description}</p>
 				<div>

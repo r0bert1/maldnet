@@ -19,8 +19,8 @@ const Browse = (props: any) => {
 			<h2>Current items:</h2>
 			<ul>
 				{items.map((item) => (
-					<li key={item.id}>
-						<h2>{item.name}</h2>
+					<li key={item._id}>
+						<h2><Link to={"auction/" + item._id}>{item.name}</Link></h2>
 						<p>{item.description}</p>
 						<b>🛸 <span>{item.currentBid.amount}</span> 🛸</b>
 					</li>

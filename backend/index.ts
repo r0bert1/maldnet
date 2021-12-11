@@ -14,14 +14,15 @@ const server = http.createServer(app)
 const PORT = process.env.PORT || 3001
 const io = new Server(server, {
   cors: {
-    origin: `http://localhost:${Number(PORT) + 1}`,
+    origin: `*`,
     methods: ['GET', 'POST'],
-    credentials: true,
+    credentials: false,
   },
 })
 
 let sockets: Socket[] = []
-let bids: Record<string, { userId: string; amount: number }> = {}
+let bids: Record<string, { userId: string; amount: number; itemId: string }> =
+  {}
 
 const updateBid = (data: {
   itemId: string
@@ -29,17 +30,24 @@ const updateBid = (data: {
   amount: number
 }) => {
   if (!bids[data.itemId] || bids[data.itemId]['amount'] < data.amount) {
-    bids[data.itemId] = { userId: data.userId, amount: data.amount }
+    bids[data.itemId] = {
+      userId: data.userId,
+      amount: data.amount,
+      itemId: data.itemId,
+    }
+    sockets.forEach((socket) => socket.emit('bid', data))
   }
 }
 
 app.use(cors())
+//Parses body of posts to json
 app.use(bodyParser.json())
 app.use('/api/item', itemRouter)
 app.use(express.static(path.resolve(__dirname, '../frontend/build')))
 
-app.post('/bid', (req, _res) => {
+app.post('/api/bid', (req, _res) => {
   updateBid(req.body)
+  console.log(req.body)
 })
 
 app.get('api/alive', (_req, res) => {

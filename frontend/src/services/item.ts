@@ -1,15 +1,12 @@
 import axios from 'axios';
 
-const url = `http://localhost:3001/api/item`
+import { ENDPOINT } from '../util';
+
+const url = `${ ENDPOINT() }/api/item`
 
 const getItems = async () => {
   const response = await axios.get(url)
   return response.data
-}
-
-const getItem = async (id: string) => {
-	const response = await axios.get(url + '/' + id)
-	return response.data
 }
 
 const addItem = async () => {
@@ -25,4 +22,4 @@ const addItem = async () => {
 }
 
 
-export default { getItems, getItem, addItem }
+export default { getItems, addItem }
