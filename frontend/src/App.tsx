@@ -20,19 +20,7 @@ export const App = () => {
   const [items, setItems] = useState<Item[]>([])
 
   useEffect(() => {
-    itemService.getItems().then((items) => {
-      setItems(
-        items.map((item: any) => ({
-          ...item,
-          currentBid: {
-            itemId: item.id,
-            userId: 'TODO',
-            amount: item.startAmount,
-            timestamp: null,
-          },
-        }))
-      )
-    })
+    itemService.getItems().then(setItems)
   }, [])
 
   const updateCurrentBid = (item: Item, bid: Bid) => {

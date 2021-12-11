@@ -8,8 +8,8 @@ import { Server, Socket } from 'socket.io'
 const app = express()
 const cors = require('cors')
 const bodyParser = require('body-parser')
-const itemRouter = require('./routers/item')
 const userRouter = require('./routers/user')
+const getRouter = require('./routers/item')
 
 const server = http.createServer(app)
 const PORT = process.env.PORT || 3001
@@ -43,8 +43,26 @@ const updateBid = (data: {
 app.use(cors())
 //Parses body of posts to json
 app.use(bodyParser.json())
-app.use('/api/item', itemRouter)
 app.use('/api/user', userRouter)
+app.use('/api/item', getRouter((item: any) => {
+  var currentBid;
+  if (bids[item._id])
+    currentBid = {
+      ...bids[item._id],
+      timestamp: null,
+    }
+  else
+    currentBid = {
+      itemId: item._id,
+      userId: item.userId,
+      amount: item.startAmount,
+      timestamp: null,
+    };
+  return {
+    ...item,
+    currentBid
+  };
+}));
 app.use(express.static(path.resolve(__dirname, '../frontend/build')))
 
 app.post('/api/bid', (req, _res) => {
@@ -62,16 +80,22 @@ app.get('*', (_req, res) => {
 
 io.on('connection', (socket) => {
   console.log('a user connected')
+  for (var [id, value] of Object.entries(bids)) {
+    socket.emit('bid', {
+      _id: id,
+      ...value
+    });
+  }
   sockets.push(socket)
   socket.on('bid', (data) => {
     updateBid(data)
     config.ports
-      .filter((port) => port !== PORT)
       .forEach((port) => {
         axios.post(`http://localhost:${port}/bid`, data).catch(() => {
           console.error(`Error: could not send bid to ${port}`)
         })
       })
+
   })
   socket.on('disconnect', () => {
     console.log('user disconnected')

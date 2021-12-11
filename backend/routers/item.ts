@@ -1,37 +1,43 @@
 import { insertItem, getAllItems } from '../MongoClient'
 
-const itemRouter = require('express').Router()
 const Item = require('../models/item')
+import { Item as FrontItem } from '../../frontend/src/Interfaces'
 
-//Gets all items from database. NOTE: not the bids
-itemRouter.get('/', async (_req: any, res: any, next: any) => {
-  try {
-    const items = await getAllItems()
-    res.json(items);
-  } catch (exception) {
-    next(exception)
-  }
-})
+const getRouter = (itemMapper: (item: any) => FrontItem) => {
+  const itemRouter = require('express').Router()
 
-//Add a new item to database
-itemRouter.post('/', async (req: any, res: any, next: any) => {
-  const { body } = req
-
-  const item = new Item({
-    seller: body.seller,
-    name: body.name,
-    description: body.description,
-    startAmount: body.startAmount
+  //Gets all items from database. NOTE: not the bids
+  itemRouter.get('/', async (_req: any, res: any, next: any) => {
+    try {
+      const items = await getAllItems()
+      res.json(items.map(itemMapper));
+    } catch (exception) {
+      next(exception)
+    }
   })
 
-  try {
-    console.log('item received,', item.toJSON())
-    res.json('item received')
-    insertItem(item)
-  } catch (exception) {
-    next(exception)
-  }
+  //Add a new item to database
+  itemRouter.post('/', async (req: any, res: any, next: any) => {
+    const { body } = req
 
-})
+    const item = new Item({
+      seller: body.seller,
+      name: body.name,
+      description: body.description,
+      startAmount: body.startAmount
+    })
 
-module.exports = itemRouter
+    try {
+      console.log('item received,', item.toJSON())
+      res.json('item received')
+      insertItem(item)
+    } catch (exception) {
+      next(exception)
+    }
+
+  })
+
+  return itemRouter;
+}
+
+module.exports = getRouter
