@@ -40,7 +40,7 @@ app.use(bodyParser.json())
 app.use('/api/item', itemRouter)
 app.use(express.static(path.resolve(__dirname, '../frontend/build')))
 
-app.post('/bid', (req, _res) => {
+app.post('/api/bid', (req, _res) => {
   updateBid(req.body)
   console.log(req.body)
 })
@@ -58,7 +58,7 @@ io.on('connection', (socket) => {
       .filter((port) => port !== PORT)
       .forEach((port) => {
         axios
-          .post(`http://localhost:${port}/bid`, data)
+          .post(`http://localhost:${port}/api/bid`, data)
           .then((res) => {
             console.log(`statusCode: ${res.status}`)
           })
