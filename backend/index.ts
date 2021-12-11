@@ -42,6 +42,10 @@ app.post('/bid', (req, _res) => {
   updateBid(req.body)
 })
 
+app.get('api/alive', (_req, res) => {
+  res.send(true)
+})
+
 app.get('*', (_req, res) => {
   res.sendFile(path.resolve(__dirname, '../frontend/build', 'index.html'))
 })
@@ -54,14 +58,9 @@ io.on('connection', (socket) => {
     config.ports
       .filter((port) => port !== PORT)
       .forEach((port) => {
-        axios
-          .post(`http://localhost:${port}/bid`, data)
-          .then((res) => {
-            console.log(`statusCode: ${res.status}`)
-          })
-          .catch((error) => {
-            console.error(error)
-          })
+        axios.post(`http://localhost:${port}/bid`, data).catch(() => {
+          console.error(`Error: could not send bid to ${port}`)
+        })
       })
   })
   socket.on('disconnect', () => {
@@ -71,4 +70,13 @@ io.on('connection', (socket) => {
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
+
+  axios
+    .post(`http://localhost:3000/api/register`, { port: PORT })
+    .then(() => {
+      console.log('Server successfully registered!')
+    })
+    .catch((error) => {
+      console.error(error)
+    })
 })
