@@ -7,7 +7,7 @@ export interface Bid {
 }
 
 export interface Item {
-	id: string,
+	_id: string,
 	name: string,
 	description: string,
 	startAmount: number,
