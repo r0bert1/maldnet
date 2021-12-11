@@ -1,19 +1,11 @@
 import axios from 'axios';
 
-const ENDPOINT =
-  process.env.NODE_ENV === 'production'
-    ? window.location.port
-    : +window.location.port - 1
+import { ENDPOINT } from '../util';
 
-const url = `http://localhost:${ENDPOINT}/api/item`
+const url = `${ ENDPOINT() }/api/item`
 
 const getItems = async () => {
   const response = await axios.get(url)
-  return response.data
-}
-
-const getItem = async (id: string) => {
-  const response = await axios.get(url + '/' + id)
   return response.data
 }
 
@@ -30,4 +22,4 @@ const addItem = async () => {
 }
 
 
-export default { getItems, getItem, addItem }
+export default { getItems, addItem }

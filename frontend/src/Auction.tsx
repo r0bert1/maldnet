@@ -48,6 +48,7 @@ class Auction extends Component<
 	}
 
 	sendBid(socket: Socket) {
+		console.log(this.state)
 		socket.emit('bid', {
 			userId: "123",
 			itemId: this.state.item?._id,

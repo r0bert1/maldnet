@@ -14,9 +14,9 @@ const server = http.createServer(app)
 const PORT = process.env.PORT || 3001
 const io = new Server(server, {
   cors: {
-    origin: `http://localhost:${Number(PORT) + 1}`,
+    origin: `*`,
     methods: ['GET', 'POST'],
-    credentials: true,
+    credentials: false,
   },
 })
 
@@ -35,6 +35,7 @@ const updateBid = (data: {
 }
 
 app.use(cors())
+//Parses body of posts to json
 app.use(bodyParser.json())
 app.use('/api/item', itemRouter)
 app.use(express.static(path.resolve(__dirname, '../frontend/build')))
