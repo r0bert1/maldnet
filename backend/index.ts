@@ -91,7 +91,8 @@ io.on('connection', (socket) => {
     updateBid(data)
     config.ports
       .forEach((port) => {
-        axios.post(`http://localhost:${port}/bid`, data).catch(() => {
+        axios.post(`http://localhost:${port}/api/bid`, data).catch((error) => {
+          console.log(error)
           console.error(`Error: could not send bid to ${port}`)
         })
       })
