@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import itemService from './services/item'
 
-import { Item } from './Interfaces'
+import { Item, User } from './Interfaces'
 
 const Link = require('react-router-dom').Link;
 
@@ -10,6 +10,11 @@ const Browse = (props: any) => {
 
 	const handleAddClick = () => {
 		itemService.addItem()
+	}
+
+	const bidder = (userid: string) => {
+		const bidder = props.users.filter((user: User) => user._id === userid)
+		return bidder[0] ? `Currently in lead: ${bidder[0].username}` : ''
 	}
 
 	return (
@@ -23,13 +28,15 @@ const Browse = (props: any) => {
 						<h2><Link to={"auction/" + item._id}>{item.name}</Link></h2>
 						<p>{item.description}</p>
 						<b>🛸 <span>{item.currentBid.amount}</span> 🛸</b>
+						<p>{bidder(item.currentBid.userId)}</p>
 					</li>
 				))}
 			</ul>
-			<div>
+			{props.user && <div>
 				<h3>Got some old hair? Gib us!</h3>
 				<button onClick={() => handleAddClick()}>Add wig</button>
-			</div>
+			</div>}
+
 		</div>
 	)
 }

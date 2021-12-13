@@ -14,3 +14,9 @@ export interface Item {
 	seller: string,
 	currentBid: Bid
 }
+
+export interface User {
+	_id: string,
+	username: string,
+	pwd: string
+}
