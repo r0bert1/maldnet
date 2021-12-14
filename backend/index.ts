@@ -22,19 +22,21 @@ const io = new Server(server, {
 
 let servers: string[] = []
 let sockets: Socket[] = []
-let bids: Record<string, { userId: string; amount: number; itemId: string }> =
+let bids: Record<string, { userId: string; amount: number; itemId: string, timestamp: Date }> =
   {}
 
 const updateBid = (data: {
   itemId: string
   userId: string
   amount: number
+  timestamp: Date
 }) => {
   if (!bids[data.itemId] || bids[data.itemId]['amount'] < data.amount) {
     bids[data.itemId] = {
       userId: data.userId,
       amount: data.amount,
       itemId: data.itemId,
+      timestamp: data.timestamp
     }
     sockets.forEach((socket) => socket.emit('bid', data))
   }

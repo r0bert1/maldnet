@@ -45,6 +45,7 @@ class Auction extends Component<
 			userId: this.props.user?._id,
 			itemId: this.state.item?._id,
 			amount: this.state.newBidAmount,
+			timestamp: new Date
 		})
 	}
 
@@ -52,7 +53,14 @@ class Auction extends Component<
 		const { item } = this.state
 		const { users } = this.props
 		const bidder = users.filter((user: User) => user._id === item?.currentBid.userId)
-		return bidder[0] ? `by ${bidder[0].username}` : ''
+		return bidder[0] ? `by ${bidder[0].username} (${item?.currentBid.timestamp ? new Date(item.currentBid.timestamp).toLocaleString() : ''})` : ''
+	}
+
+	seller() {
+		const { item } = this.state
+		const { users } = this.props
+		const seller = users.filter((user: User) => user._id === item?.seller)
+		return seller[0] ? seller[0].username : ''
 	}
 
 	render() {
@@ -61,6 +69,7 @@ class Auction extends Component<
 		return (
 			<div className="browse">
 				<h1 className="browse-header">{item?.name} - {item?._id}</h1>
+				<h2>Seller: {this.seller()}</h2>
 				<h3>Current price: {item?.currentBid.amount}$ {this.bidder()}</h3>
 				<p>{item?.description}</p>
 				{this.props.user &&

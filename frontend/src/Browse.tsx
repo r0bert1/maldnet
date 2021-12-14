@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import itemService from './services/item'
 
 import { Item, User } from './Interfaces'
+import ItemForm from './ItemForm'
 
 const Link = require('react-router-dom').Link;
 
 const Browse = (props: any) => {
+	const [showAddItem, setShowAddItem] = useState<Boolean>(false)
 	let items: Item[] = props.items;
 
 	const handleAddClick = () => {
-		itemService.addItem()
+		setShowAddItem(true)
 	}
 
 	const bidder = (userid: string) => {
@@ -36,6 +38,9 @@ const Browse = (props: any) => {
 				<h3>Got some old hair? Gib us!</h3>
 				<button onClick={() => handleAddClick()}>Add wig</button>
 			</div>}
+			{showAddItem &&
+				<ItemForm setShowAddItem={setShowAddItem} user={props.user} setItems={props.setItems}/>
+			}
 
 		</div>
 	)

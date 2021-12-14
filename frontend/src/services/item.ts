@@ -1,20 +1,23 @@
+import { strictEqual } from 'assert';
 import axios from 'axios';
 
 import { ENDPOINT } from '../util';
 
-const url = `${ ENDPOINT() }/api/item`
+const url = `${ENDPOINT()}/api/item`
 
 const getItems = async () => {
   const response = await axios.get(url)
   return response.data
 }
 
-const addItem = async () => {
+const addItem = async (userId: string, name: string, description: string, startAmount: number, buyTime: Date, imagePath: string) => {
   const item = {
-    seller: 'randomBaldGuy',
-    name: 'Wiggly jiggly wig',
-    description: 'This wig is most wiggy thing on earth',
-    startAmount: 0,
+    seller: userId,
+    name,
+    description,
+    startAmount,
+    buyTime,
+    imageUrl: imagePath
   }
 
   const response = await axios.post(url, item)

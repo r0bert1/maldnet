@@ -44,5 +44,6 @@ code {
   overflow: auto;
 }
 
-.new-user-form {
+.text-area-div {
+  display: flex;
 }

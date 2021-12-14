@@ -53,7 +53,7 @@ export const App = () => {
       <Login setUser={setUser} user={user} />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Browse items={items} user={user} users={users} />} />
+          <Route path="/" element={<Browse items={items} user={user} users={users} setItems={setItems}/>} />
           <Route
             path="auction/:aid"
             element={<Auction socket={socket} items={items} user={user} users={users}/>}
