@@ -74,6 +74,7 @@ class Auction extends Component<
 				<p>{item?.description}</p>
 				{this.props.user &&
 					<div>
+						<h3>Bidding ends at {item?.buyTime ? new Date(item.buyTime).toLocaleString() : 'Not specified'}</h3>
 						<p>place your bid:</p>
 						<input
 							onChange={(event) => this.setState({ newBidAmount: +event.target.value })}

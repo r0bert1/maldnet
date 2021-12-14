@@ -24,7 +24,9 @@ const getRouter = (itemMapper: (item: any) => FrontItem) => {
       seller: body.seller,
       name: body.name,
       description: body.description,
-      startAmount: body.startAmount
+      startAmount: body.startAmount,
+      buyTime: body.buyTime,
+      imageUrl: body.imageUrl
     })
 
     try {
