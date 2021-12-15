@@ -3,6 +3,9 @@ import axios from 'axios'
 import path from 'path'
 import http from 'http'
 import { Server, Socket } from 'socket.io'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 const cors = require('cors')
 const bodyParser = require('body-parser')
@@ -20,17 +23,15 @@ const io = new Server(server, {
   },
 })
 
+interface Bid {
+	userId: string; amount: number; itemId: string, timestamp: Date
+}
+
 let servers: string[] = []
 let sockets: Socket[] = []
-let bids: Record<string, { userId: string; amount: number; itemId: string, timestamp: Date }> =
-  {}
+let bids: Record<string, Bid> = {}
 
-const updateBid = (data: {
-  itemId: string
-  userId: string
-  amount: number
-  timestamp: Date
-}) => {
+const updateBid = (data: Bid) => {
   if (!bids[data.itemId] || bids[data.itemId]['amount'] < data.amount) {
     bids[data.itemId] = {
       userId: data.userId,
@@ -50,14 +51,13 @@ app.use(
   '/api/item',
   getRouter((item: any) => {
     var currentBid
-    if (bids[item._id])
+    if (bids[item.itemId])
       currentBid = {
-        ...bids[item._id],
-        timestamp: null,
+        ...bids[item.itemId]
       }
     else
       currentBid = {
-        itemId: item._id,
+        itemId: item.itemId,
         userId: item.userId,
         amount: item.startAmount,
         timestamp: null,
@@ -74,7 +74,7 @@ app.post('/api/bid', (req, _res) => {
   updateBid(req.body)
 })
 
-app.get('api/health-check', (_req, res) => {
+app.get('/api/health-check', (_req, res) => {
   res.send('Healthy!')
 })
 
@@ -105,13 +105,48 @@ io.on('connection', (socket) => {
   })
 })
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`)
+  const url = `http://${process.env.MASTER_ADDRESS}:3000/api/servers`
+  const serverUrls = (await axios.get(url)).data
+  const promises = []
+  for (const serverUrl of serverUrls) {
+    const itemUrl = `${serverUrl}/api/item`
+    promises.push(axios.get(itemUrl))
+  }
+  console.log(`Fetching bids from ${promises.length} peers...`)
+  const reponses = await Promise.all(promises);
+  for (const response of reponses) {
+    const serverBids = response.data.map((item: any) => item.currentBid);
+    mergeObjects(bids, recordify(serverBids), (bid: Bid, serverBid: Bid) => {
+      if (bid.amount > serverBid.amount) return bid;
+      if (bid.amount < serverBid.amount) return serverBid;
+      // amount is equal, let's see who was first
+      if (bid.timestamp > serverBid.timestamp) return serverBid;
+      return bid; // It is very unlikely that two different bids share a timestamp :)
+    })
+  }
+  console.log('Merged bids from peers :)')
 })
+
+function recordify<V extends { itemId: string }>(arr: V[]): Record<string, V> {
+  const returnValue: any = {};
+  for (const v of arr) {
+    returnValue[v.itemId] = v;
+  }
+  return returnValue
+}
+
+// merges rec2 into rec1 in-place 
+function mergeObjects<V>(rec1: Record<string, V>, rec2: Record<string, V>, mf: (o1: V, o2: V) => V) {
+  for (const [key, value] of Object.entries(rec2)) {
+    rec1[key] = rec1[key] ? mf(rec1[key], value) : value;
+  }
+}
 
 setInterval(() => {
   axios
-    .post(`http://localhost:3000/api/health-check`, { port: PORT })
+    .post(`http://${process.env.MASTER_ADDRESS}:3000/api/health-check`, { port: PORT })
     .then((res) => {
       if (res.status === 201) console.log('Successfully registered by master')
       servers = res.data
