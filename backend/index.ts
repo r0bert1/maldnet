@@ -16,11 +16,11 @@ const app = express()
 const server = http.createServer(app)
 const PORT = process.env.PORT || 3001
 const io = new Server(server, {
-  cors: {
-    origin: `*`,
-    methods: ['GET', 'POST'],
-    credentials: false,
-  },
+	cors: {
+		origin: `*`,
+		methods: ['GET', 'POST'],
+		credentials: false,
+	},
 })
 
 interface Bid {
@@ -32,15 +32,15 @@ let sockets: Socket[] = []
 let bids: Record<string, Bid> = {}
 
 const updateBid = (data: Bid) => {
-  if (!bids[data.itemId] || bids[data.itemId]['amount'] < data.amount) {
-    bids[data.itemId] = {
-      userId: data.userId,
-      amount: data.amount,
-      itemId: data.itemId,
-      timestamp: data.timestamp
-    }
-    sockets.forEach((socket) => socket.emit('bid', data))
-  }
+	if (!bids[data.itemId] || bids[data.itemId]['amount'] < data.amount) {
+		bids[data.itemId] = {
+			userId: data.userId,
+			amount: data.amount,
+			itemId: data.itemId,
+			timestamp: data.timestamp
+		}
+		sockets.forEach((socket) => socket.emit('bid', data))
+	}
 }
 
 app.use(cors())
@@ -48,115 +48,124 @@ app.use(cors())
 app.use(bodyParser.json())
 app.use('/api/user', userRouter)
 app.use(
-  '/api/item',
-  getRouter((item: any) => {
-    var currentBid
-    if (bids[item.itemId])
-      currentBid = {
-        ...bids[item.itemId]
-      }
-    else
-      currentBid = {
-        itemId: item.itemId,
-        userId: item.userId,
-        amount: item.startAmount,
-        timestamp: null,
-      }
-    return {
-      ...item,
-      currentBid,
-    }
-  })
+	'/api/item',
+	getRouter((item: any) => {
+		var currentBid
+		if (bids[item.itemId])
+			currentBid = {
+				...bids[item.itemId]
+			}
+		else
+			currentBid = {
+				itemId: item.itemId,
+				userId: item.userId,
+				amount: item.startAmount,
+				timestamp: null,
+			}
+		return {
+			...item,
+			currentBid,
+		}
+	})
 )
 app.use(express.static(path.resolve(__dirname, '../frontend/build')))
 
 app.post('/api/bid', (req, _res) => {
-  updateBid(req.body)
+	updateBid(req.body)
 })
 
 app.get('/api/health-check', (_req, res) => {
-  res.send('Healthy!')
+	res.send('Healthy!')
 })
 
 app.get('*', (_req, res) => {
-  res.sendFile(path.resolve(__dirname, '../frontend/build', 'index.html'))
+	res.sendFile(path.resolve(__dirname, '../frontend/build', 'index.html'))
 })
 
 io.on('connection', (socket) => {
-  console.log('a user connected')
-  for (var [id, value] of Object.entries(bids)) {
-    socket.emit('bid', {
-      _id: id,
-      ...value,
-    })
-  }
-  sockets.push(socket)
-  socket.on('bid', (data) => {
-    updateBid(data)
-    servers.forEach((server) => {
-      axios.post(`${server}/api/bid`, data).catch(() => {
-        console.error(`Error: could not send bid to ${server}`)
-      })
-    })
-  })
+	console.log('a user connected')
+	for (var [id, value] of Object.entries(bids)) {
+		socket.emit('bid', {
+			_id: id,
+			...value,
+		})
+	}
+	sockets.push(socket)
+	socket.on('bid', (data) => {
+		updateBid(data)
+		servers.forEach((server) => {
+			axios.post(`${server}/api/bid`, data).catch(() => {
+				console.error(`Error: could not send bid to ${server}`)
+			})
+		})
+	})
 
-  socket.on('disconnect', () => {
-    console.log('user disconnected')
-  })
+	socket.on('disconnect', () => {
+		console.log('user disconnected')
+	})
 })
 
 server.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`)
-  const url = `http://${process.env.MASTER_ADDRESS}:3000/api/servers`
-  const serverUrls = (await axios.get(url)).data
-  const promises = []
-  for (const serverUrl of serverUrls) {
-    const itemUrl = `${serverUrl}/api/item`
-    promises.push(axios.get(itemUrl).catch(error => {
-		console.log(`Error getting items from ${serverUrl}`, error);
-		return null;
-	}))
-  }
-  console.log(`Fetching bids from ${promises.length} peers...`)
-  const reponses = await Promise.all(promises);
-  for (const response of reponses) {
-	if (!response)
-		continue;
-    const serverBids = response.data.map((item: any) => item.currentBid);
-    mergeObjects(bids, recordify(serverBids), (bid: Bid, serverBid: Bid) => {
-      if (bid.amount > serverBid.amount) return bid;
-      if (bid.amount < serverBid.amount) return serverBid;
-      // amount is equal, let's see who was first
-      if (bid.timestamp > serverBid.timestamp) return serverBid;
-      return bid; // It is very unlikely that two different bids share a timestamp :)
-    })
-  }
-  console.log('Merged bids from peers :)')
+	console.log(`Server running on port ${PORT}`)
+	const masterUrl = `http://${process.env.MASTER_ADDRESS}:3000/api/servers`
+	await fetchBidsFromPeers(masterUrl);
+	console.log('Server started successfully')
 })
 
+async function fetchBidsFromPeers(url: string) {
+	// Fetching list of peers
+	const serverUrls = (await axios.get(url)).data
+
+	// Fetching bids from peers
+	const promises = []
+	for (const serverUrl of serverUrls) {
+		const itemUrl = `${serverUrl}/api/item`
+		promises.push(axios.get(itemUrl).catch(error => {
+			console.log(`Error getting items from ${serverUrl}`, error);
+			return null;
+		}))
+	}
+	console.log(`Fetching bids from ${promises.length} peers...`)
+	const reponses = await Promise.all(promises);
+
+	// Merging bids
+	for (const response of reponses) {
+		if (!response)
+			continue;
+		const serverBids = response.data.map((item: any) => item.currentBid);
+		mergeObjects(bids, recordify(serverBids), (bid: Bid, serverBid: Bid) => {
+			if (bid.amount > serverBid.amount) return bid;
+			if (bid.amount < serverBid.amount) return serverBid;
+			// amount is equal, let's see who was first
+			if (bid.timestamp > serverBid.timestamp) return serverBid;
+			return bid; // It is very unlikely that two different bids share a timestamp :)
+		})
+	}
+}
+
 function recordify<V extends { itemId: string }>(arr: V[]): Record<string, V> {
-  const returnValue: any = {};
-  for (const v of arr) {
-    returnValue[v.itemId] = v;
-  }
-  return returnValue
+	const returnValue: any = {};
+	for (const v of arr) {
+		returnValue[v.itemId] = v;
+	}
+	return returnValue
 }
 
 // merges rec2 into rec1 in-place 
 function mergeObjects<V>(rec1: Record<string, V>, rec2: Record<string, V>, mf: (o1: V, o2: V) => V) {
-  for (const [key, value] of Object.entries(rec2)) {
-    rec1[key] = rec1[key] ? mf(rec1[key], value) : value;
-  }
+	for (const [key, value] of Object.entries(rec2)) {
+		rec1[key] = rec1[key] ? mf(rec1[key], value) : value;
+	}
 }
 
 setInterval(() => {
-  axios
-    .post(`http://${process.env.MASTER_ADDRESS}:3000/api/health-check`, { port: PORT })
-    .then((res) => {
-      if (res.status === 201) console.log('Successfully registered by master')
-      servers = res.data
-    })
-    .catch(() => {
-      console.error('Failed to connect to master')
-    })
+	axios
+		.post(`http://${process.env.MASTER_ADDRESS}:3000/api/health-check`, { port: PORT })
+		.then((res) => {
+			if (res.status === 201) console.log('Successfully registered by master')
+			servers = res.data
+		})
+		.catch(() => {
+			console.error('Failed to connect to master')
+		})
 }, 5000)
