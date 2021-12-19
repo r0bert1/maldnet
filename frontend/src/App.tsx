@@ -36,7 +36,8 @@ export const App = () => {
   const updateCurrentBid = (item: Item, bid: Bid) => {
     if (item._id === bid.itemId)
       return {
-        ...item,
+		...item,
+		buyTime: bid.buyTime,
         currentBid: bid,
       }
     return item

@@ -3,7 +3,8 @@ export interface Bid {
 	itemId: string,
 	userId: string,
 	amount: number,
-	timestamp: Date
+	timestamp: Date,
+	buyTime: Date,
 }
 
 export interface Item {
