@@ -44,11 +44,15 @@ const updateBid = (data: Bid) => {
       amount: data.amount,
       itemId: data.itemId,
       timestamp: data.timestamp,
-      buyTime: data.buyTime,
+      buyTime: maxDate(bids[data.itemId]?.buyTime, data.buyTime),
       sold: false,
     }
     sockets.forEach((socket) => socket.emit('bid', data))
   }
+}
+
+const maxDate = (d1: Date | undefined, d2: Date) => {
+    return !d1 ? d2 : d1 > d2 ? d1 : d2;
 }
 
 app.use(cors())
@@ -96,13 +100,12 @@ app.get('/api/health-check', (_req, res) => {
 app.post('/api/finalize/vote', (req, res) => {
   const bidsToFinalize: Bid[] = req.body
   const currentTime = new Date()
-  const confirmedBids = bidsToFinalize.filter(
-    (bid) =>
-      bid.buyTime < currentTime &&
+  const confirmedBidItemIds = bidsToFinalize.filter(
+    (bid) => new Date(bid.buyTime) <= currentTime &&
       bid.amount === bids[bid.itemId].amount &&
       bid.userId === bids[bid.itemId].userId
-  )
-  res.json(confirmedBids)
+  ).map((bid) => bid.itemId)
+  res.json(confirmedBidItemIds);
 })
 
 // Finalize bids given
@@ -116,9 +119,14 @@ app.post('/api/finalize/commit', (req, _res) => {
 setInterval(async () => {
   const currentTime = new Date()
   let bidsToFinalize = Object.values(bids).filter(
-    (bid) => bid.buyTime < currentTime && !bid.sold
+    (bid) => bid.buyTime <= currentTime && !bid.sold
   )
 
+  if (!bidsToFinalize.length) {
+    return;
+  }
+
+  console.log(`Starting 2PC to finalize ${bidsToFinalize.length} bids...`);
   // Two phase commit :)
   // Let's make sure everyone agrees that the bid should be finalized
   // 1) Query to commit
@@ -135,14 +143,15 @@ setInterval(async () => {
   const responses = await Promise.all(promises)
 
   // 3) Choose to commit or rollback
-  let bidsToCommit = bidsToFinalize
+  let bidsToCommit = bidsToFinalize;
   for (const response of responses) {
     if (!response) {
-      bidsToCommit = []
-      break
+      bidsToCommit = [];
+      break;
     }
-    bidsToCommit = bidsToCommit.filter((value) => response.data.includes(value))
+    bidsToCommit = bidsToCommit.filter((bid) => response.data.includes(bid.itemId))
   }
+  console.log(`${bidsToCommit.length} bids are agreed to be commited`);
 
   // 4) Commit, part 1
   if (bidsToCommit.length) {
@@ -152,6 +161,9 @@ setInterval(async () => {
     await Promise.all(promises)
   }
   // 5) Commit, part 2
+  bidsToCommit.forEach((bid) => {
+    bids[bid.itemId].sold = true
+  })
   bidsToCommit.forEach(finalizeBid)
 }, 10 * 1000)
 
@@ -168,13 +180,23 @@ io.on('connection', (socket) => {
     })
   }
   sockets.push(socket)
-  socket.on('bid', (data) => {
-    if (bids[data.itemId]?.sold) {
+  socket.on('bid', ({userId, itemId, amount}: {userId: string, itemId: string, amount: number}) => {
+    if (bids[itemId]?.sold) {
       return
     }
-    updateBid(data)
+    // Convert strings to Dates
+    const timestamp = new Date();
+    // Auction can't end until one minute has passed of previous bid
+    const buyTime = new Date(timestamp.getTime() + 60 * 1000);
+
+    const bid: Bid = {
+        userId, itemId, amount,
+        timestamp, buyTime, sold: false // Checked earlier
+    };
+
+    updateBid(bid)
     servers.forEach((server) => {
-      axios.post(`${server}/api/bid`, data).catch(() => {
+      axios.post(`${server}/api/bid`, bid).catch(() => {
         console.error(`Error: could not send bid to ${server}`)
       })
     })

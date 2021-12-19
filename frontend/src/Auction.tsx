@@ -44,25 +44,12 @@ class Auction extends Component<
   }
 
   sendBid(socket: Socket) {
-    const timestamp = new Date()
-    // Auction can't end until one minute has passed of previous bid
-    const newBuyTime = new Date(timestamp.getTime() + 60 * 1000)
-    console.log(newBuyTime)
-    console.log(this.max(this.state.item?.buyTime, newBuyTime))
-    console.log(this.state.item)
-
-    socket.emit('bid', {
-      userId: this.props.user?._id,
-      itemId: this.state.item?._id,
-      amount: this.state.newBidAmount,
-      timestamp: timestamp,
-      buyTime: this.max(this.state.item?.buyTime, newBuyTime),
-    })
-  }
-
-  max(d1: Date | undefined, d2: Date) {
-    if (!d1) return d2
-    return d1 > d2 ? d1 : d2
+    if (this.props.user && this.state.item)
+      socket.emit('bid', {
+        userId: this.props.user._id,
+        itemId: this.state.item._id,
+        amount: this.state.newBidAmount,
+      })
   }
 
   bidder() {
@@ -87,49 +74,53 @@ class Auction extends Component<
     return seller[0] ? seller[0].username : ''
   }
 
+  getBidComponent() {
+	const { item, newBidAmount } = this.state;
+	
+	if (item && item.buyTime > new Date()) {
+		return (
+		  <>
+			{this.props.user && (
+			  <div>
+				<h3>
+				  Bidding ends at{' '}
+				  {item?.buyTime
+					? new Date(item.buyTime).toLocaleString()
+					: 'Not specified'}
+				</h3>
+				<p>place your bid:</p>
+				<input
+				  onChange={(event) =>
+					this.setState({ newBidAmount: +event.target.value })
+				  }
+				  type="number"
+				  value={newBidAmount}
+				></input>
+				<button onClick={() => this.sendBid(this.props.socket)}>
+				  Place bid
+				</button>
+			  </div>
+			)}
+		  </>
+		)
+	  } else {
+		return (
+		  <>
+			<h3>
+			  Bidding ended at{' '}
+			  {item?.buyTime
+				? new Date(item.buyTime).toLocaleString()
+				: 'Not specified'}
+			</h3>
+		  </>
+		)
+	  }
+  }
+
   render() {
-    const { item, newBidAmount } = this.state
+    const { item, newBidAmount } = this.state;
 
-    let bidComponent
-
-    if (item && item.buyTime > new Date()) {
-      bidComponent = (
-        <>
-          {this.props.user && (
-            <div>
-              <h3>
-                Bidding ends at{' '}
-                {item?.buyTime
-                  ? new Date(item.buyTime).toLocaleString()
-                  : 'Not specified'}
-              </h3>
-              <p>place your bid:</p>
-              <input
-                onChange={(event) =>
-                  this.setState({ newBidAmount: +event.target.value })
-                }
-                type="number"
-                value={newBidAmount}
-              ></input>
-              <button onClick={() => this.sendBid(this.props.socket)}>
-                Place bid
-              </button>
-            </div>
-          )}
-        </>
-      )
-    } else {
-      bidComponent = (
-        <>
-          <h3>
-            Bidding ended at{' '}
-            {item?.buyTime
-              ? new Date(item.buyTime).toLocaleString()
-              : 'Not specified'}
-          </h3>
-        </>
-      )
-    }
+    let bidComponent = this.getBidComponent();
 
     return (
       <div className="browse">
