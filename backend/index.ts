@@ -24,7 +24,11 @@ const io = new Server(server, {
 })
 
 interface Bid {
-	userId: string; amount: number; itemId: string, timestamp: Date
+	userId: string,
+	amount: number,
+	itemId: string,
+	timestamp: Date,
+	buyTime: Date
 }
 
 let servers: string[] = []
@@ -37,7 +41,8 @@ const updateBid = (data: Bid) => {
 			userId: data.userId,
 			amount: data.amount,
 			itemId: data.itemId,
-			timestamp: data.timestamp
+			timestamp: data.timestamp,
+			buyTime: data.buyTime
 		}
 		sockets.forEach((socket) => socket.emit('bid', data))
 	}
@@ -74,6 +79,7 @@ app.post('/api/bid', (req, _res) => {
 	updateBid(req.body)
 })
 
+// Health check from master
 app.get('/api/health-check', (_req, res) => {
 	res.send('Healthy!')
 })
@@ -158,6 +164,7 @@ function mergeObjects<V>(rec1: Record<string, V>, rec2: Record<string, V>, mf: (
 	}
 }
 
+// Health check to master
 setInterval(() => {
 	axios
 		.post(`http://${process.env.MASTER_ADDRESS}:3000/api/health-check`, { port: PORT })
@@ -168,4 +175,4 @@ setInterval(() => {
 		.catch(() => {
 			console.error('Failed to connect to master')
 		})
-}, 5000)
+}, 5 * 1000)
