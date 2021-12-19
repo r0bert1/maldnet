@@ -4,6 +4,7 @@ import path from 'path'
 import http from 'http'
 import { Server, Socket } from 'socket.io'
 import dotenv from 'dotenv'
+import { finalizeBid } from './MongoClient'
 
 dotenv.config()
 
@@ -83,6 +84,59 @@ app.post('/api/bid', (req, _res) => {
 app.get('/api/health-check', (_req, res) => {
 	res.send('Healthy!')
 })
+
+// 2PC Vote for bids to finalize
+app.post('/api/finalize/vote', (req, res) => {
+	const bidsToFinalize: Bid[] = req.body;
+	for (const bid in bidsToFinalize) {
+		
+	}
+})
+
+// Finalize bids given
+app.post('/api/finalize/commit', (req, res) => {
+	
+})
+
+setInterval(async () => {
+	const currentTime = new Date();
+	let bidsToFinalize = Object.values(bids).filter(
+		bid => bid.buyTime < currentTime
+	);
+
+	// Two phase commit :)
+	// Let's make sure everyone agrees that the bid should be finalized
+	// 1) Query to commit
+	console.log("servers", servers);
+	let promises = servers.map(serverUrl => 
+		axios.post(`${serverUrl}/api/finalize/vote`, bidsToFinalize).catch(error => {
+			console.log(`Error trying to initiate 2PC for ${serverUrl}`, error);
+			return null;
+		})
+		// TODO: what if two backends send the same 2PC?
+	);
+	const responses = await Promise.all(promises);
+
+	// 3) Choose to commit or rollback
+	let bidsToCommit = bidsToFinalize;
+	for (const response of responses) {
+		if (!response) {
+			bidsToCommit = [];
+			break;
+		}
+		bidsToCommit = bidsToCommit.filter(value => response.data.includes(value));
+	}
+
+	// 4) Commit, part 1
+	if (bidsToCommit.length) {
+		let promises = servers.map(serverUrl => 
+			axios.post(`${serverUrl}/api/finalize/commit`, bidsToCommit)
+		);
+		await Promise.all(promises);
+	}
+	// 5) Commit, part 2
+	bidsToCommit.forEach(finalizeBid);
+}, 10 * 1000)
 
 app.get('*', (_req, res) => {
 	res.sendFile(path.resolve(__dirname, '../frontend/build', 'index.html'))
