@@ -37,7 +37,7 @@ const Login = (props: any) => {
     setShowMessage(true)
     setTimeout(() => {
       setShowMessage(false)
-    }, 5000)
+    }, 3000)
   }
 
   const handleUserCreation = () => {
@@ -56,7 +56,7 @@ const Login = (props: any) => {
           setNewUsername('')
           setNewPassword('')
           setNewPasswordAgain('')
-        }, 5000)
+        }, 2000)
       } catch (error) {
         handleMessages('Something went wrong')
       }

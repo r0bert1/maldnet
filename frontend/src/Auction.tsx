@@ -77,7 +77,7 @@ class Auction extends Component<
   getBidComponent() {
 	const { item, newBidAmount } = this.state;
 	
-	if (item && item.buyTime > new Date()) {
+	if (item && new Date(item.buyTime) > new Date()) {
 		return (
 		  <>
 			{this.props.user && (
@@ -120,7 +120,7 @@ class Auction extends Component<
   render() {
     const { item, newBidAmount } = this.state;
 
-    let bidComponent = this.getBidComponent();
+    let BidComponent = this.getBidComponent();
 
     return (
       <div className="browse">
@@ -136,27 +136,7 @@ class Auction extends Component<
           Current price: {item?.currentBid.amount}€ {this.bidder()}
         </h3>
         <p>{item?.description}</p>
-        {this.props.user && (
-          <div>
-            <h3>
-              Bidding ends at{' '}
-              {item?.buyTime
-                ? new Date(item.buyTime).toLocaleString()
-                : 'Not specified'}
-            </h3>
-            <p>place your bid:</p>
-            <input
-              onChange={(event) =>
-                this.setState({ newBidAmount: +event.target.value })
-              }
-              type="number"
-              value={newBidAmount}
-            ></input>
-            <button onClick={() => this.sendBid(this.props.socket)}>
-              Place bid
-            </button>
-          </div>
-        )}
+        {BidComponent}
       </div>
     )
   }
