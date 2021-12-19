@@ -50,5 +50,5 @@ setInterval(() => {
 }, 5000)
 
 app.get('/api/servers', (_req, res) => {
-  res.json(servers)
+	res.json(servers)
 })

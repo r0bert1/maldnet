@@ -112,11 +112,16 @@ server.listen(PORT, async () => {
   const promises = []
   for (const serverUrl of serverUrls) {
     const itemUrl = `${serverUrl}/api/item`
-    promises.push(axios.get(itemUrl))
+    promises.push(axios.get(itemUrl).catch(error => {
+		console.log(`Error getting items from ${serverUrl}`, error);
+		return null;
+	}))
   }
   console.log(`Fetching bids from ${promises.length} peers...`)
   const reponses = await Promise.all(promises);
   for (const response of reponses) {
+	if (!response)
+		continue;
     const serverBids = response.data.map((item: any) => item.currentBid);
     mergeObjects(bids, recordify(serverBids), (bid: Bid, serverBid: Bid) => {
       if (bid.amount > serverBid.amount) return bid;
