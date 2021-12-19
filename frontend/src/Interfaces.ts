@@ -13,7 +13,8 @@ export interface Item {
 	startAmount: number,
 	seller: string,
 	currentBid: Bid,
-	buyTime: Date
+	buyTime: Date,
+	imageUrl: string
 }
 
 export interface User {

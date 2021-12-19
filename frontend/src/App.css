@@ -7369,3 +7369,15 @@ a:hover,
 .fmxw-400 {
     max-width: 400px !important;
 }
+
+.grid-container {
+	display: grid;
+	grid-template-columns: auto auto;
+	background-color: #00A2ED;
+	padding: 10px;
+}
+.grid-item {
+	border: 1px solid rgba(0, 0, 0, 1);
+	padding: 10px;
+	text-align: center;
+}

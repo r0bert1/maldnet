@@ -69,8 +69,9 @@ class Auction extends Component<
 		return (
 			<div className="browse">
 				<h1 className="browse-header">{item?.name} - {item?._id}</h1>
+				<img src={'../' + (item?.imageUrl ? item.imageUrl : 'maldnet_4.png')} width="400px"></img>
 				<h2>Seller: {this.seller()}</h2>
-				<h3>Current price: {item?.currentBid.amount}$ {this.bidder()}</h3>
+				<h3>Current price: {item?.currentBid.amount}€ {this.bidder()}</h3>
 				<p>{item?.description}</p>
 				{this.props.user &&
 					<div>
