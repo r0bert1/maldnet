@@ -47,6 +47,7 @@ const updateBid = (bid: Bid) => {
   if (!bids[bid.itemId] || bids[bid.itemId]['amount'] < bid.amount) {
     bids[bid.itemId] = bid
     sockets.forEach((socket) => socket.emit('bid', bid))
+    fileLogger('info', `Sent bid to other sockets: ${bid}`)
     return true
   }
   return false
@@ -78,6 +79,7 @@ app.post('/api/bid', (req, _res) => {
   req.body.timestamp = new Date(req.body.timestamp)
   req.body.buyTime = new Date(req.body.buyTime)
   updateBid(req.body)
+  fileLogger('info', `Received bid: ${req.body}`)
 })
 
 // Health check from master
@@ -116,6 +118,7 @@ setInterval(async () => {
   }
 
   console.log(`Starting 2PC to finalize ${bidsToFinalize.length} bids...`);
+  fileLogger('info', `Starting 2PC to finalize ${bidsToFinalize.length} bids...`)
   // Two phase commit :)
   // Let's make sure everyone agrees that the bid should be finalized
   // 1) Query to commit
@@ -125,6 +128,7 @@ setInterval(async () => {
         .post(`${serverUrl}/api/finalize/vote`, bidsToFinalize)
         .catch((error) => {
           console.log(`Error trying to initiate 2PC for ${serverUrl}`, error)
+          fileLogger('error', `Error trying to initiate 2PC for ${serverUrl}. Error: ${error}`)
           return null
         })
     // TODO: what if two backends send the same 2PC?
@@ -141,6 +145,7 @@ setInterval(async () => {
     bidsToCommit = bidsToCommit.filter((bid) => response.data.includes(bid.itemId))
   }
   console.log(`${bidsToCommit.length} bids are agreed to be commited`);
+  fileLogger('info', `${bidsToCommit.length} bids are agreed to be commited`)
 
   // 4) Commit, part 1
   if (bidsToCommit.length) {
@@ -162,6 +167,7 @@ app.get('*', (_req, res) => {
 
 io.on('connection', (socket) => {
   console.log('a user connected')
+  fileLogger('info', `A user has connected to node`)
   for (var [id, value] of Object.entries(bids)) {
     socket.emit('bid', {
       _id: id,
@@ -183,9 +189,11 @@ io.on('connection', (socket) => {
     };
 
     if (updateBid(bid)) {
+      fileLogger('info', `Received bid from user: ${bid}`)
       servers.forEach((server) => {
         axios.post(`${server}/api/bid`, bid).catch((err) => {
           console.error(`Error: could not send bid to ${server}`, err)
+          fileLogger('error', `Error: could not send bid to ${server}`)
         })
       })
     }
@@ -193,14 +201,17 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('user disconnected')
+    fileLogger('info', 'User disconnected')
   })
 })
 
 server.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`)
+  fileLogger('info', `Server running on port ${PORT}`)
   const masterUrl = `http://${process.env.MASTER_ADDRESS}:3000/api/servers`
   await fetchBidsFromPeers(masterUrl)
   console.log('Server started successfully')
+  fileLogger('info', 'Server started successfully')
 })
 
 async function fetchBidsFromPeers(url: string) {
@@ -214,11 +225,13 @@ async function fetchBidsFromPeers(url: string) {
     promises.push(
       axios.get(itemUrl).catch((error) => {
         console.log(`Error getting items from ${serverUrl}`, error)
+        fileLogger('error', `Error getting items from ${serverUrl}: error: ${error}`)
         return null
       })
     )
   }
   console.log(`Fetching bids from ${promises.length} peers...`)
+  fileLogger('info', `Fetching bids from ${promises.length} peers...`)
   const reponses = await Promise.all(promises)
 
   // Merging bids
@@ -268,10 +281,14 @@ setInterval(() => {
       port: PORT,
     })
     .then((res) => {
-      if (res.status === 201) console.log('Successfully registered by master')
+      if (res.status === 201) {
+        console.log('Successfully registered by master')
+        fileLogger('info', 'Successfully registed by master')
+      }
       servers = res.data
     })
     .catch(() => {
       console.error('Failed to connect to master')
+      fileLogger('error', 'Failed to connect to master')
     })
 }, 5 * 1000)
