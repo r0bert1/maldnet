@@ -5,6 +5,7 @@ import http from 'http'
 import { Server, Socket } from 'socket.io'
 import dotenv from 'dotenv'
 import { finalizeBid } from './MongoClient'
+import { Item } from '../frontend/src/Interfaces'
 
 dotenv.config()
 
@@ -42,7 +43,6 @@ const updateBid = (bid: Bid) => {
     return false
   }
   if (!bids[bid.itemId] || bids[bid.itemId]['amount'] < bid.amount) {
-    console.log('updateBID', bid)
     bids[bid.itemId] = bid
     sockets.forEach((socket) => socket.emit('bid', bid))
     return true
@@ -61,7 +61,7 @@ app.use('/api/user', userRouter)
 app.use(
   '/api/item',
   getItemRouter((item: any) => {
-    var currentBid = bids[item.itemId] || null
+    var currentBid = bids[item._id] ?? null
     return {
       ...item,
       currentBid,
@@ -104,7 +104,6 @@ app.post('/api/finalize/commit', (req, _res) => {
 })
 
 setInterval(async () => {
-  console.log(bids)
   const currentTime = new Date()
   let bidsToFinalize = Object.values(bids).filter(
     (bid) => bid.buyTime <= currentTime && !bid.sold
@@ -153,7 +152,7 @@ setInterval(async () => {
     bids[bid.itemId].sold = true
   })
   bidsToCommit.forEach(finalizeBid)
-}, 10 * 1000)
+}, 2.5 * 1000)
 
 app.get('*', (_req, res) => {
   res.sendFile(path.resolve(__dirname, '../frontend/build', 'index.html'))
@@ -223,21 +222,25 @@ async function fetchBidsFromPeers(url: string) {
   // Merging bids
   for (const response of reponses) {
     if (!response) continue
-    const serverBids = response.data
-      .map((item: any) => item.currentBid)
-      .filter((bid :any) => bid != null)
+    const serverBids: Bid[] = response.data
+      .map((item: Item) => item.currentBid ? {
+        ...item.currentBid,
+        buyTime: new Date(item.currentBid.buyTime),
+        timestamp: new Date(item.currentBid.timestamp)
+      } : null)
+      .filter((bid: Bid | null) => bid != null);
+
     mergeObjects(bids, recordify(serverBids), (bid: Bid, serverBid: Bid) => {
       if (bid.amount > serverBid.amount) return bid
       if (bid.amount < serverBid.amount) return serverBid
       // amount is equal, let's see who was first
       if (bid.timestamp > serverBid.timestamp) return serverBid
       return bid // It is very unlikely that two different bids share a timestamp :)
-    })
+    });
   }
 }
 
 function recordify<V extends { itemId: string }>(arr: V[]): Record<string, V> {
-  console.log('ARRRR', arr)
   const returnValue: any = {}
   for (const v of arr) {
     returnValue[v.itemId] = v
