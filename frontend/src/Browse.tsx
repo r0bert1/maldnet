@@ -24,16 +24,21 @@ const Browse = (props: any) => {
 			<h1 className='browse-header'>Mald.fi</h1>
 			<p>You got bald? Don't be mald, we got you!</p>
 			<h2>Current items:</h2>
-			<ul>
+			<div className='grid-container'>
 				{items.map((item) => (
-					<li key={item._id}>
-						<h2><Link to={"auction/" + item._id}>{item.name}</Link></h2>
-						<p>{item.description}</p>
-						<b>🛸 <span>{item.currentBid.amount}</span> 🛸</b>
-						<p>{bidder(item.currentBid.userId)}</p>
-					</li>
+					<>
+						<div className='grid-item'>
+							<h2><Link to={"auction/" + item._id}>{item.name}</Link></h2>
+							<p>{item.description}</p>
+							<b><span>{item.currentBid.amount}</span>€</b>
+							<p>{bidder(item.currentBid.userId)}</p>
+						</div>
+						<div className='grid-item'>
+							<img src={item.imageUrl ? item.imageUrl : 'maldnet_4.png'} width="200px"></img>
+						</div>
+					</>
 				))}
-			</ul>
+			</div>
 			{props.user && <div>
 				<h3>Got some old hair? Gib us!</h3>
 				<button onClick={() => handleAddClick()}>Add wig</button>

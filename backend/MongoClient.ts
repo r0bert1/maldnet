@@ -1,7 +1,7 @@
 const { MongoClient } = require('mongodb');
 
 // Connection URL
-const url = 'mongodb://localhost:27017';
+const url = 'mongodb://127.0.0.1:27017';
 const client = new MongoClient(url);
 
 // Database Name
@@ -26,7 +26,6 @@ async function getAllItems() {
   const collection = db.collection('items');
 
   const findItems = await collection.find({}).toArray();
-  console.log('Found documents =>', findItems);
 
   return findItems;
 }
@@ -38,7 +37,7 @@ async function insertUser(user: any) {
   const collection = db.collection('users');
 
   const addUser = await collection.insertOne(user);
-  console.log('Inserted item =>', addUser);
+  console.log('Inserted user =>', addUser);
 
   return 'done.';
 }
@@ -49,7 +48,6 @@ async function getUser(user: string) {
   const collection = db.collection('users')
 
   const findUser = await collection.find({ username: user }).toArray()
-  console.log('Found documents =>', findUser)
   return findUser
 }
 
@@ -60,7 +58,6 @@ async function getAllUsers() {
   const collection = db.collection('users');
 
   const findUsers = await collection.find({}).toArray();
-  console.log('Found documents =>', findUsers);
 
   return findUsers;
 }
