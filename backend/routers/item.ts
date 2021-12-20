@@ -2,6 +2,7 @@ import { insertItem, getAllItems } from '../MongoClient'
 
 const Item = require('../models/item')
 import { Item as FrontItem } from '../../frontend/src/Interfaces'
+import { fileLogger } from '../utils/logger'
 
 const getRouter = (itemMapper: (item: any) => FrontItem) => {
   const itemRouter = require('express').Router()
@@ -11,7 +12,9 @@ const getRouter = (itemMapper: (item: any) => FrontItem) => {
     try {
       const items = await getAllItems()
       res.json(items.map(itemMapper));
+      fileLogger('info', 'Fetched items')
     } catch (exception) {
+      fileLogger('error', `Error while fetching items: ${exception}`)
       next(exception)
     }
   })
@@ -33,7 +36,9 @@ const getRouter = (itemMapper: (item: any) => FrontItem) => {
       console.log('item received,', item.toJSON())
       res.json('item received')
       insertItem(item)
+      fileLogger('info', `Item inserted: ${item}`)
     } catch (exception) {
+      fileLogger('error', `Error while inserting item: ${exception}`)
       next(exception)
     }
 

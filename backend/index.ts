@@ -5,6 +5,8 @@ import http from 'http'
 import { Server, Socket } from 'socket.io'
 import dotenv from 'dotenv'
 
+import { fileLogger } from './utils/logger'
+
 dotenv.config()
 
 const cors = require('cors')
@@ -45,6 +47,7 @@ const updateBid = (data: Bid) => {
 			buyTime: data.buyTime
 		}
 		sockets.forEach((socket) => socket.emit('bid', data))
+		fileLogger('info', `Sent bid to other sockets: ${data}`)
 	}
 }
 
@@ -77,6 +80,7 @@ app.use(express.static(path.resolve(__dirname, '../frontend/build')))
 
 app.post('/api/bid', (req, _res) => {
 	updateBid(req.body)
+	fileLogger('info', `Received bid: ${req.body}`)
 })
 
 // Health check from master
@@ -90,6 +94,7 @@ app.get('*', (_req, res) => {
 
 io.on('connection', (socket) => {
 	console.log('a user connected')
+	fileLogger('info', `A user has connected to node`)
 	for (var [id, value] of Object.entries(bids)) {
 		socket.emit('bid', {
 			_id: id,
@@ -99,23 +104,28 @@ io.on('connection', (socket) => {
 	sockets.push(socket)
 	socket.on('bid', (data) => {
 		updateBid(data)
+		fileLogger('info', `Received bid from user: ${data}`)
 		servers.forEach((server) => {
 			axios.post(`${server}/api/bid`, data).catch(() => {
 				console.error(`Error: could not send bid to ${server}`)
+				fileLogger('error', `Error: could not send bid to ${server}`)
 			})
 		})
 	})
 
 	socket.on('disconnect', () => {
 		console.log('user disconnected')
+		fileLogger('info', 'User disconnected')
 	})
 })
 
 server.listen(PORT, async () => {
 	console.log(`Server running on port ${PORT}`)
+	fileLogger('info', `Server running on port ${PORT}`)
 	const masterUrl = `http://${process.env.MASTER_ADDRESS}:3000/api/servers`
 	await fetchBidsFromPeers(masterUrl);
 	console.log('Server started successfully')
+	fileLogger('info', 'Server started successfully')
 })
 
 async function fetchBidsFromPeers(url: string) {
@@ -128,10 +138,12 @@ async function fetchBidsFromPeers(url: string) {
 		const itemUrl = `${serverUrl}/api/item`
 		promises.push(axios.get(itemUrl).catch(error => {
 			console.log(`Error getting items from ${serverUrl}`, error);
+			fileLogger('error', `Error getting items from ${serverUrl}: error: ${error}`)
 			return null;
 		}))
 	}
 	console.log(`Fetching bids from ${promises.length} peers...`)
+	fileLogger('info', `Fetching bids from ${promises.length} peers...`)
 	const reponses = await Promise.all(promises);
 
 	// Merging bids
@@ -169,10 +181,14 @@ setInterval(() => {
 	axios
 		.post(`http://${process.env.MASTER_ADDRESS}:3000/api/health-check`, { port: PORT })
 		.then((res) => {
-			if (res.status === 201) console.log('Successfully registered by master')
+			if (res.status === 201) {
+				console.log('Successfully registered by master')
+				fileLogger('info', 'Successfully registed by master')
+			}
 			servers = res.data
 		})
 		.catch(() => {
 			console.error('Failed to connect to master')
+			fileLogger('error', 'Failed to connect to master')
 		})
 }, 5 * 1000)
