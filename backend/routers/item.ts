@@ -4,7 +4,7 @@ const Item = require('../models/item')
 import { Item as FrontItem } from '../../frontend/src/Interfaces'
 import { fileLogger } from '../utils/logger'
 
-const getRouter = (itemMapper: (item: any) => FrontItem) => {
+const getItemRouter = (itemMapper: (item: any) => FrontItem) => {
   const itemRouter = require('express').Router()
 
   //Gets all items from database. NOTE: not the bids
@@ -47,4 +47,4 @@ const getRouter = (itemMapper: (item: any) => FrontItem) => {
   return itemRouter;
 }
 
-module.exports = getRouter
+module.exports = getItemRouter
