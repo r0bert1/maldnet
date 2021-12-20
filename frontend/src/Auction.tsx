@@ -24,7 +24,7 @@ class Auction extends Component<
     )
 
     this.setState({
-      newBidAmount: (item?.currentBid.amount ?? 0) + 1,
+      newBidAmount: (item?.currentBid?.amount ?? 0) + 1,
       item,
     })
   }
@@ -37,7 +37,7 @@ class Auction extends Component<
       )
 
       this.setState({
-        newBidAmount: (item?.currentBid.amount ?? 0) + 1,
+        newBidAmount: (item?.currentBid?.amount ?? 0) + 1,
         item,
       })
     }
@@ -55,12 +55,12 @@ class Auction extends Component<
   bidder() {
     const { item } = this.state
     const { users } = this.props
-    const bidder = users.filter(
-      (user: User) => user._id === item?.currentBid.userId
+    const bidder = users.find(
+      (user: User) => user._id === item?.currentBid?.userId
     )
-    return bidder[0]
-      ? `by ${bidder[0].username} (${
-          item?.currentBid.timestamp
+    return bidder
+      ? `by ${bidder.username} (${
+          item?.currentBid?.timestamp
             ? new Date(item.currentBid.timestamp).toLocaleString()
             : ''
         })`
@@ -133,7 +133,7 @@ class Auction extends Component<
         ></img>
         <h2>Seller: {this.seller()}</h2>
         <h3>
-          Current price: {item?.currentBid.amount}€ {this.bidder()}
+          Current price: {item?.currentBid?.amount ?? item?.startAmount}€ {this.bidder()}
         </h3>
         <p>{item?.description}</p>
         {BidComponent}

@@ -11,7 +11,7 @@ dotenv.config()
 const cors = require('cors')
 const bodyParser = require('body-parser')
 const userRouter = require('./routers/user')
-const getRouter = require('./routers/item')
+const getItemRouter = require('./routers/item')
 
 const app = express()
 const server = http.createServer(app)
@@ -37,22 +37,21 @@ let servers: string[] = []
 let sockets: Socket[] = []
 let bids: Record<string, Bid> = {}
 
-const updateBid = (data: Bid) => {
-  if (!bids[data.itemId] || bids[data.itemId]['amount'] < data.amount) {
-    bids[data.itemId] = {
-      userId: data.userId,
-      amount: data.amount,
-      itemId: data.itemId,
-      timestamp: data.timestamp,
-      buyTime: maxDate(bids[data.itemId]?.buyTime, data.buyTime),
-      sold: false,
-    }
-    sockets.forEach((socket) => socket.emit('bid', data))
+const updateBid = (bid: Bid) => {
+  if (bids[bid.itemId]?.sold) {
+    return false
   }
+  if (!bids[bid.itemId] || bids[bid.itemId]['amount'] < bid.amount) {
+    console.log('updateBID', bid)
+    bids[bid.itemId] = bid
+    sockets.forEach((socket) => socket.emit('bid', bid))
+    return true
+  }
+  return false
 }
 
 const maxDate = (d1: Date | undefined, d2: Date) => {
-    return !d1 ? d2 : d1 > d2 ? d1 : d2;
+  return !d1 ? d2 : d1 > d2 ? d1 : d2;
 }
 
 app.use(cors())
@@ -61,33 +60,21 @@ app.use(bodyParser.json())
 app.use('/api/user', userRouter)
 app.use(
   '/api/item',
-  getRouter((item: any) => {
-    var currentBid
-    if (bids[item.itemId])
-      currentBid = {
-        ...bids[item.itemId],
-      }
-    else
-      currentBid = {
-        itemId: item.itemId,
-        userId: item.userId,
-        amount: item.startAmount,
-        timestamp: null,
-        buyTime: item.buyTime,
-      }
+  getItemRouter((item: any) => {
+    var currentBid = bids[item.itemId] || null
     return {
       ...item,
       currentBid,
-      buyTime: currentBid.buyTime,
+      buyTime: currentBid?.buyTime ?? item.buyTime,
     }
   })
 )
 app.use(express.static(path.resolve(__dirname, '../frontend/build')))
 
+// Backend to backend bid message
 app.post('/api/bid', (req, _res) => {
-  if (bids[req.body.itemId]?.sold) {
-    return
-  }
+  req.body.timestamp = new Date(req.body.timestamp)
+  req.body.buyTime = new Date(req.body.buyTime)
   updateBid(req.body)
 })
 
@@ -117,6 +104,7 @@ app.post('/api/finalize/commit', (req, _res) => {
 })
 
 setInterval(async () => {
+  console.log(bids)
   const currentTime = new Date()
   let bidsToFinalize = Object.values(bids).filter(
     (bid) => bid.buyTime <= currentTime && !bid.sold
@@ -180,26 +168,26 @@ io.on('connection', (socket) => {
     })
   }
   sockets.push(socket)
-  socket.on('bid', ({userId, itemId, amount}: {userId: string, itemId: string, amount: number}) => {
-    if (bids[itemId]?.sold) {
-      return
-    }
+  socket.on('bid', ({ userId, itemId, amount }: { userId: string, itemId: string, amount: number }) => {
     // Convert strings to Dates
     const timestamp = new Date();
     // Auction can't end until one minute has passed of previous bid
     const buyTime = new Date(timestamp.getTime() + 60 * 1000);
 
     const bid: Bid = {
-        userId, itemId, amount,
-        timestamp, buyTime, sold: false // Checked earlier
+      userId, itemId, amount,
+      timestamp,
+      buyTime: maxDate(bids[itemId]?.buyTime, buyTime),
+      sold: false // Checked earlier
     };
 
-    updateBid(bid)
-    servers.forEach((server) => {
-      axios.post(`${server}/api/bid`, bid).catch(() => {
-        console.error(`Error: could not send bid to ${server}`)
+    if (updateBid(bid)) {
+      servers.forEach((server) => {
+        axios.post(`${server}/api/bid`, bid).catch((err) => {
+          console.error(`Error: could not send bid to ${server}`, err)
+        })
       })
-    })
+    }
   })
 
   socket.on('disconnect', () => {
@@ -235,7 +223,9 @@ async function fetchBidsFromPeers(url: string) {
   // Merging bids
   for (const response of reponses) {
     if (!response) continue
-    const serverBids = response.data.map((item: any) => item.currentBid)
+    const serverBids = response.data
+      .map((item: any) => item.currentBid)
+      .filter((bid :any) => bid != null)
     mergeObjects(bids, recordify(serverBids), (bid: Bid, serverBid: Bid) => {
       if (bid.amount > serverBid.amount) return bid
       if (bid.amount < serverBid.amount) return serverBid
@@ -247,6 +237,7 @@ async function fetchBidsFromPeers(url: string) {
 }
 
 function recordify<V extends { itemId: string }>(arr: V[]): Record<string, V> {
+  console.log('ARRRR', arr)
   const returnValue: any = {}
   for (const v of arr) {
     returnValue[v.itemId] = v

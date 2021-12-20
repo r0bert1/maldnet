@@ -30,8 +30,8 @@ const Browse = (props: any) => {
 						<div className='grid-item' key={item._id + '_info'}>
 							<h2><Link to={"auction/" + item._id}>{item.name}</Link></h2>
 							<p>{item.description}</p>
-							<b><span>{item.currentBid.amount}</span>€</b>
-							<p>{bidder(item.currentBid.userId)}</p>
+							<b><span>{item.currentBid?.amount ?? item.startAmount}</span>€</b>
+							<p>{bidder(item.currentBid?.userId ?? item.seller)}</p>
 						</div>
 						<div className='grid-item' key={item._id + '_preview'}>
 							<img src={item.imageUrl ? item.imageUrl : 'maldnet_4.png'} width="200px"></img>
