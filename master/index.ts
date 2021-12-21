@@ -1,7 +1,8 @@
 import express from 'express'
 import bodyParser from 'body-parser'
-import bidRouter from './routers/bidRouter'
 import axios from 'axios'
+
+import { fileLogger } from './utils/logger'
 
 const app = express()
 
@@ -23,27 +24,30 @@ app.post('/api/health-check', (req, res) => {
   if (!servers.includes(address)) {
     servers.push(address)
     console.log('Registered ', address)
+    fileLogger('info', `Registered server: ${address}`)
     console.log('Registered servers:', servers)
+    fileLogger('info', `Registered servers: ${servers}`)
     return res.status(201).send(otherServers)
   }
 
   return res.send(otherServers)
 })
 
-app.use(bidRouter)
-
 const PORT = 3000
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
+  fileLogger('info', `Server running on port: ${PORT}`)
 })
 
 setInterval(() => {
   servers.forEach((current) => {
     axios.get(`${current}/api/health-check`).catch(() => {
       console.log(current, ' is not responding')
+      fileLogger('error', `${current} is not responding`)
       servers = servers.filter((server) => server !== current)
       console.log('Registered servers:', servers)
+      fileLogger('info', `Registered servers: ${servers}`)
     })
   })
 }, 5000)
