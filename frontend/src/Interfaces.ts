@@ -13,7 +13,7 @@ export interface Item {
 	description: string,
 	startAmount: number,
 	seller: string,
-	currentBid: Bid,
+	currentBid: Bid | null,
 	buyTime: Date,
 	imageUrl: string
 }

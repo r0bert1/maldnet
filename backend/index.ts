@@ -5,13 +5,14 @@ import http from 'http'
 import { Server, Socket } from 'socket.io'
 import dotenv from 'dotenv'
 import { finalizeBid } from './MongoClient'
+import { Item } from '../frontend/src/Interfaces'
 
 dotenv.config()
 
 const cors = require('cors')
 const bodyParser = require('body-parser')
 const userRouter = require('./routers/user')
-const getRouter = require('./routers/item')
+const getItemRouter = require('./routers/item')
 
 const app = express()
 const server = http.createServer(app)
@@ -37,18 +38,20 @@ let servers: string[] = []
 let sockets: Socket[] = []
 let bids: Record<string, Bid> = {}
 
-const updateBid = (data: Bid) => {
-  if (!bids[data.itemId] || bids[data.itemId]['amount'] < data.amount) {
-    bids[data.itemId] = {
-      userId: data.userId,
-      amount: data.amount,
-      itemId: data.itemId,
-      timestamp: data.timestamp,
-      buyTime: data.buyTime,
-      sold: false,
-    }
-    sockets.forEach((socket) => socket.emit('bid', data))
+const updateBid = (bid: Bid) => {
+  if (bids[bid.itemId]?.sold) {
+    return false
   }
+  if (!bids[bid.itemId] || bids[bid.itemId]['amount'] < bid.amount) {
+    bids[bid.itemId] = bid
+    sockets.forEach((socket) => socket.emit('bid', bid))
+    return true
+  }
+  return false
+}
+
+const maxDate = (d1: Date | undefined, d2: Date) => {
+  return !d1 ? d2 : d1 > d2 ? d1 : d2
 }
 
 app.use(cors())
@@ -57,33 +60,21 @@ app.use(bodyParser.json())
 app.use('/api/user', userRouter)
 app.use(
   '/api/item',
-  getRouter((item: any) => {
-    var currentBid
-    if (bids[item.itemId])
-      currentBid = {
-        ...bids[item.itemId],
-      }
-    else
-      currentBid = {
-        itemId: item.itemId,
-        userId: item.userId,
-        amount: item.startAmount,
-        timestamp: null,
-        buyTime: item.buyTime,
-      }
+  getItemRouter((item: any) => {
+    var currentBid = bids[item._id] ?? null
     return {
       ...item,
       currentBid,
-      buyTime: currentBid.buyTime,
+      buyTime: currentBid?.buyTime ?? item.buyTime,
     }
   })
 )
 app.use(express.static(path.resolve(__dirname, '../frontend/build')))
 
+// Backend to backend bid message
 app.post('/api/bid', (req, _res) => {
-  if (bids[req.body.itemId]?.sold) {
-    return
-  }
+  req.body.timestamp = new Date(req.body.timestamp)
+  req.body.buyTime = new Date(req.body.buyTime)
   updateBid(req.body)
 })
 
@@ -96,13 +87,15 @@ app.get('/api/health-check', (_req, res) => {
 app.post('/api/finalize/vote', (req, res) => {
   const bidsToFinalize: Bid[] = req.body
   const currentTime = new Date()
-  const confirmedBids = bidsToFinalize.filter(
-    (bid) =>
-      bid.buyTime < currentTime &&
-      bid.amount === bids[bid.itemId].amount &&
-      bid.userId === bids[bid.itemId].userId
-  )
-  res.json(confirmedBids)
+  const confirmedBidItemIds = bidsToFinalize
+    .filter(
+      (bid) =>
+        new Date(bid.buyTime) <= currentTime &&
+        bid.amount === bids[bid.itemId].amount &&
+        bid.userId === bids[bid.itemId].userId
+    )
+    .map((bid) => bid.itemId)
+  res.json(confirmedBidItemIds)
 })
 
 // Finalize bids given
@@ -116,9 +109,14 @@ app.post('/api/finalize/commit', (req, _res) => {
 setInterval(async () => {
   const currentTime = new Date()
   let bidsToFinalize = Object.values(bids).filter(
-    (bid) => bid.buyTime < currentTime && !bid.sold
+    (bid) => bid.buyTime <= currentTime && !bid.sold
   )
 
+  if (!bidsToFinalize.length) {
+    return
+  }
+
+  console.log(`Starting 2PC to finalize ${bidsToFinalize.length} bids...`)
   // Two phase commit :)
   // Let's make sure everyone agrees that the bid should be finalized
   // 1) Query to commit
@@ -141,8 +139,11 @@ setInterval(async () => {
       bidsToCommit = []
       break
     }
-    bidsToCommit = bidsToCommit.filter((value) => response.data.includes(value))
+    bidsToCommit = bidsToCommit.filter((bid) =>
+      response.data.includes(bid.itemId)
+    )
   }
+  console.log(`${bidsToCommit.length} bids are agreed to be commited`)
 
   // 4) Commit, part 1
   if (bidsToCommit.length) {
@@ -152,8 +153,11 @@ setInterval(async () => {
     await Promise.all(promises)
   }
   // 5) Commit, part 2
+  bidsToCommit.forEach((bid) => {
+    bids[bid.itemId].sold = true
+  })
   bidsToCommit.forEach(finalizeBid)
-}, 10 * 1000)
+}, 2.5 * 1000)
 
 app.get('*', (_req, res) => {
   res.sendFile(path.resolve(__dirname, '../frontend/build', 'index.html'))
@@ -168,17 +172,40 @@ io.on('connection', (socket) => {
     })
   }
   sockets.push(socket)
-  socket.on('bid', (data) => {
-    if (bids[data.itemId]?.sold) {
-      return
+  socket.on(
+    'bid',
+    ({
+      userId,
+      itemId,
+      amount,
+    }: {
+      userId: string
+      itemId: string
+      amount: number
+    }) => {
+      // Convert strings to Dates
+      const timestamp = new Date()
+      // Auction can't end until one minute has passed of previous bid
+      const buyTime = new Date(timestamp.getTime() + 60 * 1000)
+
+      const bid: Bid = {
+        userId,
+        itemId,
+        amount,
+        timestamp,
+        buyTime: maxDate(bids[itemId]?.buyTime, buyTime),
+        sold: false, // Checked earlier
+      }
+
+      if (updateBid(bid)) {
+        servers.forEach((server) => {
+          axios.post(`${server}/api/bid`, bid).catch((err) => {
+            console.error(`Error: could not send bid to ${server}`, err)
+          })
+        })
+      }
     }
-    updateBid(data)
-    servers.forEach((server) => {
-      axios.post(`${server}/api/bid`, data).catch(() => {
-        console.error(`Error: could not send bid to ${server}`)
-      })
-    })
-  })
+  )
 
   socket.on('disconnect', () => {
     console.log('user disconnected')
@@ -213,7 +240,18 @@ async function fetchBidsFromPeers(url: string) {
   // Merging bids
   for (const response of reponses) {
     if (!response) continue
-    const serverBids = response.data.map((item: any) => item.currentBid)
+    const serverBids: Bid[] = response.data
+      .map((item: Item) =>
+        item.currentBid
+          ? {
+              ...item.currentBid,
+              buyTime: new Date(item.currentBid.buyTime),
+              timestamp: new Date(item.currentBid.timestamp),
+            }
+          : null
+      )
+      .filter((bid: Bid | null) => bid != null)
+
     mergeObjects(bids, recordify(serverBids), (bid: Bid, serverBid: Bid) => {
       if (bid.amount > serverBid.amount) return bid
       if (bid.amount < serverBid.amount) return serverBid

@@ -24,7 +24,7 @@ class Auction extends Component<
     )
 
     this.setState({
-      newBidAmount: (item?.currentBid.amount ?? 0) + 1,
+      newBidAmount: (item?.currentBid?.amount ?? 0) + 1,
       item,
     })
   }
@@ -37,43 +37,30 @@ class Auction extends Component<
       )
 
       this.setState({
-        newBidAmount: (item?.currentBid.amount ?? 0) + 1,
+        newBidAmount: (item?.currentBid?.amount ?? 0) + 1,
         item,
       })
     }
   }
 
   sendBid(socket: Socket) {
-    const timestamp = new Date()
-    // Auction can't end until one minute has passed of previous bid
-    const newBuyTime = new Date(timestamp.getTime() + 60 * 1000)
-    console.log(newBuyTime)
-    console.log(this.max(this.state.item?.buyTime, newBuyTime))
-    console.log(this.state.item)
-
-    socket.emit('bid', {
-      userId: this.props.user?._id,
-      itemId: this.state.item?._id,
-      amount: this.state.newBidAmount,
-      timestamp: timestamp,
-      buyTime: this.max(this.state.item?.buyTime, newBuyTime),
-    })
-  }
-
-  max(d1: Date | undefined, d2: Date) {
-    if (!d1) return d2
-    return d1 > d2 ? d1 : d2
+    if (this.props.user && this.state.item)
+      socket.emit('bid', {
+        userId: this.props.user._id,
+        itemId: this.state.item._id,
+        amount: this.state.newBidAmount,
+      })
   }
 
   bidder() {
     const { item } = this.state
     const { users } = this.props
-    const bidder = users.filter(
-      (user: User) => user._id === item?.currentBid.userId
+    const bidder = users.find(
+      (user: User) => user._id === item?.currentBid?.userId
     )
-    return bidder[0]
-      ? `by ${bidder[0].username} (${
-          item?.currentBid.timestamp
+    return bidder
+      ? `by ${bidder.username} (${
+          item?.currentBid?.timestamp
             ? new Date(item.currentBid.timestamp).toLocaleString()
             : ''
         })`
@@ -87,13 +74,11 @@ class Auction extends Component<
     return seller[0] ? seller[0].username : ''
   }
 
-  render() {
+  getBidComponent() {
     const { item, newBidAmount } = this.state
 
-    let bidComponent
-
-    if (item && item.buyTime > new Date()) {
-      bidComponent = (
+    if (item && new Date(item.buyTime) > new Date()) {
+      return (
         <>
           {this.props.user && (
             <div>
@@ -119,7 +104,7 @@ class Auction extends Component<
         </>
       )
     } else {
-      bidComponent = (
+      return (
         <>
           <h3>
             Bidding ended at{' '}
@@ -130,6 +115,12 @@ class Auction extends Component<
         </>
       )
     }
+  }
+
+  render() {
+    const { item, newBidAmount } = this.state
+
+    let BidComponent = this.getBidComponent()
 
     return (
       <div className="browse">
@@ -142,30 +133,11 @@ class Auction extends Component<
         ></img>
         <h2>Seller: {this.seller()}</h2>
         <h3>
-          Current price: {item?.currentBid.amount}€ {this.bidder()}
+          Current price: {item?.currentBid?.amount ?? item?.startAmount}€{' '}
+          {this.bidder()}
         </h3>
         <p>{item?.description}</p>
-        {this.props.user && (
-          <div>
-            <h3>
-              Bidding ends at{' '}
-              {item?.buyTime
-                ? new Date(item.buyTime).toLocaleString()
-                : 'Not specified'}
-            </h3>
-            <p>place your bid:</p>
-            <input
-              onChange={(event) =>
-                this.setState({ newBidAmount: +event.target.value })
-              }
-              type="number"
-              value={newBidAmount}
-            ></input>
-            <button onClick={() => this.sendBid(this.props.socket)}>
-              Place bid
-            </button>
-          </div>
-        )}
+        {BidComponent}
       </div>
     )
   }
