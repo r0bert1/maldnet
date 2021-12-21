@@ -13,17 +13,16 @@ let current = 0
 
 app.get('/', (_req, res) => {
   current === servers.length - 1 ? (current = 0) : current++
-  res.redirect(servers[current])
+  res.redirect(`http://${servers[current]}`)
 })
 
 app.post('/api/health-check', (req, res) => {
-  const { port } = req.body
-  const server = `http://localhost:${port}`
+  const { address } = req.body
   const otherServers = servers
 
-  if (!servers.includes(server)) {
-    servers.push(server)
-    console.log('Registered ', server)
+  if (!servers.includes(address)) {
+    servers.push(address)
+    console.log('Registered ', address)
     console.log('Registered servers:', servers)
     return res.status(201).send(otherServers)
   }
@@ -50,5 +49,5 @@ setInterval(() => {
 }, 5000)
 
 app.get('/api/servers', (_req, res) => {
-	res.json(servers)
+  res.json(servers)
 })
