@@ -14,6 +14,6 @@ Once the master node and the database is running we can start using server nodes
 
 ## Using a server node
 
-A server node includes a frontend and a backend, which both have to be started individually. Both can be started by navigating to their respective directory (`frontend` or `backend`) and issuing the command `npm run start`. This will start them at their default port. The command `npm run start2` also exists to run them on an alternative port, but if the user wants to use a different port, they have to specify that manually. There exists also in both the frontend and backend directories a `.env` file that can be edited to configure the backend and master address. A `.env.local` can also be created instead to do these configurations.
+A server node includes a frontend and a backend. Start by navigating to the `frontend` directory and running the command `npm run build` to build the project. You can start the node after this using the command `npm start` in the `backend` directory. This will start the node at the default port. The command `npm run start2` also exists to run it on port 3003, but if the user wants to use a specifc port, they can specify it the following way `PORT=4200 npm start`. There exists also in both the frontend and backend directories a `.env` file that can be edited to configure the backend and master address. A `.env.local` can also be created instead to do these configurations.
 
 
