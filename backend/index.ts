@@ -312,7 +312,7 @@ const ADDRESS = ip.address()
 setInterval(() => {
   axios
     .post(`http://${process.env.MASTER_ADDRESS}:3000/api/health-check`, {
-      address: `${ADDRESS}:${PORT}`,
+      address: `http://${ADDRESS}:${PORT}`,
     })
     .then((res) => {
       if (res.status === 201) {

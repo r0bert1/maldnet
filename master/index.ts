@@ -14,7 +14,7 @@ let current = 0
 
 app.get('/', (_req, res) => {
   current === servers.length - 1 ? (current = 0) : current++
-  res.redirect(`http://${servers[current]}`)
+  res.redirect(servers[current])
 })
 
 app.post('/api/health-check', (req, res) => {
